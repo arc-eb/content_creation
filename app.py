@@ -67,7 +67,12 @@ def allowed_file(filename):
 @app.route('/')
 def index():
     """Main page with upload form."""
-    return render_template('index.html')
+    response = app.make_response(render_template('index.html'))
+    # Disable caching for development
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @app.route('/health')
@@ -278,7 +283,10 @@ def get_image(filename):
     """Serve generated images."""
     file_path = Path(app.config['OUTPUT_FOLDER']) / filename
     if file_path.exists():
-        return send_file(file_path)
+        response = send_file(file_path)
+        # Add cache control for generated images
+        response.headers['Cache-Control'] = 'public, max-age=3600'
+        return response
     else:
         return jsonify({'error': 'Image not found'}), 404
 
@@ -286,8 +294,9 @@ def get_image(filename):
 if __name__ == '__main__':
     # Get port from environment or default to 5000
     port = int(os.getenv('PORT', 5000))
-    # Only run in debug mode if explicitly set
-    debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    # Enable debug mode by default for local development
+    # Set FLASK_DEBUG=False to disable
+    debug = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
     # Disable reloader on Windows (causes socket errors on Ctrl+C)
     # You can enable it by setting FLASK_RELOADER=True if needed
     use_reloader = os.getenv('FLASK_RELOADER', 'False').lower() == 'true' and os.name != 'nt'
@@ -298,8 +307,10 @@ if __name__ == '__main__':
     print(f"Starting server on port {port}")
     print(f"Debug mode: {debug}")
     print(f"Auto-reloader: {use_reloader}")
+    print(f"Template auto-reload: {debug}")
     print(f"Open your browser and go to: http://127.0.0.1:{port}")
     print("\nPress Ctrl+C to stop the server")
+    print("💡 Tip: If you don't see changes, do a hard refresh (Ctrl+F5 or Cmd+Shift+R)")
     print("="*70)
     print()
     
