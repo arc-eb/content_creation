@@ -8,7 +8,9 @@ from gemini_client import GeminiGarmentSwapClient
 
 # Set API key if needed
 if not os.getenv("GEMINI_API_KEY"):
-    os.environ["GEMINI_API_KEY"] = "AIzaSyC935QLsFzfPgjYr--c3Z7X05n0EOENG0k"
+    print("ERROR: GEMINI_API_KEY environment variable not set!")
+    print("Please set it using: export GEMINI_API_KEY='your-api-key'")
+    sys.exit(1)
 
 # Custom prompt - ultra-explicit structure with clear DO NOT CHANGE vs ONLY CHANGE sections
 CUSTOM_PROMPT = """TASK: You have two images - (1) a photo of a model, (2) a flat-lay photo of a garment.

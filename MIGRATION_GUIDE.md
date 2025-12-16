@@ -52,7 +52,7 @@ The setup script (`setup_directories.py`) can automatically migrate your files.
 
 **Old way (INSECURE - hardcoded):**
 ```python
-MY_API_KEY = "AIzaSyC935QLsFzfPgjYr--c3Z7X05n0EOENG0k"
+MY_API_KEY = "your-api-key-here"  # Replace with your actual key
 ```
 
 **New way (SECURE - environment variable):**

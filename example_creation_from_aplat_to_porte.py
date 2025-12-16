@@ -5,7 +5,7 @@ from PIL import Image
 from io import BytesIO
 from IPython.display import Image as IpyImage, display
 
-MY_API_KEY = "AIzaSyC935QLsFzfPgjYr--c3Z7X05n0EOENG0k"
+MY_API_KEY = os.getenv("GEMINI_API_KEY", "")  # Get from environment variable
 
 
 # -------------------------------------------------

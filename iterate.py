@@ -57,7 +57,9 @@ def run_swap(
     """Run a single garment swap."""
     # Set API key if needed
     if not os.getenv("GEMINI_API_KEY"):
-        os.environ["GEMINI_API_KEY"] = "AIzaSyC935QLsFzfPgjYr--c3Z7X05n0EOENG0k"
+        print("ERROR: GEMINI_API_KEY environment variable not set!")
+        print("Please set it using: export GEMINI_API_KEY='your-api-key'")
+        sys.exit(1)
     
     config = Config.from_env()
     config.ensure_directories()

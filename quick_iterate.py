@@ -23,9 +23,11 @@ def main():
     model_image = sys.argv[1]
     flatlay_image = sys.argv[2]
     
-    # Set API key if needed
+    # API key must be set via environment variable
     if not os.getenv("GEMINI_API_KEY"):
-        os.environ["GEMINI_API_KEY"] = "AIzaSyC935QLsFzfPgjYr--c3Z7X05n0EOENG0k"
+        print("ERROR: GEMINI_API_KEY environment variable not set!")
+        print("Please set it using: export GEMINI_API_KEY='your-api-key'")
+        sys.exit(1)
     
     # Load base prompt
     prompt_gen = PromptGenerator()

@@ -52,8 +52,9 @@ def run_single_test(
     # Set API key from old file if not in env (for quick testing)
     if not os.getenv("GEMINI_API_KEY"):
         # Fallback: use the key from the old script (for development only)
-        os.environ["GEMINI_API_KEY"] = "AIzaSyC935QLsFzfPgjYr--c3Z7X05n0EOENG0k"
-        print("⚠️  Using API key from code (set GEMINI_API_KEY env var for production)")
+        print("ERROR: GEMINI_API_KEY environment variable not set!")
+        print("Please set it using: export GEMINI_API_KEY='your-api-key'")
+        sys.exit(1)
     
     try:
         # Initialize
