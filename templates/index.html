@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bompard Garment Swap</title>
+    <title>Virtual Try-On | Bompard Paris</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -11,68 +14,294 @@
             box-sizing: border-box;
         }
         
+        :root {
+            --bompard-black: #1a1a1a;
+            --bompard-beige: #f5f0e8;
+            --bompard-cream: #faf8f4;
+            --bompard-gold: #d4af37;
+            --bompard-gray: #6b6b6b;
+            --bompard-light-gray: #e8e8e8;
+            --bompard-white: #ffffff;
+            --shadow-soft: 0 2px 20px rgba(0, 0, 0, 0.08);
+            --shadow-medium: 0 4px 30px rgba(0, 0, 0, 0.12);
+            --shadow-strong: 0 8px 40px rgba(0, 0, 0, 0.15);
+            --shadow-luxury: 0 12px 50px rgba(0, 0, 0, 0.18);
+        }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bompard-cream);
             min-height: 100vh;
-            padding: 20px;
+            padding: 0;
+            color: var(--bompard-black);
+            line-height: 1.6;
+            overflow-x: hidden;
         }
         
-        .container {
-            max-width: 1200px;
+        /* Header with Bompard Logo */
+        .header {
+            background: var(--bompard-white);
+            border-bottom: 1px solid var(--bompard-light-gray);
+            padding: 25px 0;
+            box-shadow: var(--shadow-soft);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.98);
+        }
+        
+        .header-content {
+            max-width: 1600px;
             margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
+            padding: 0 50px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
         
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 2.5em;
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
         
-        .subtitle {
+        .logo {
+            height: 60px;
+            width: auto;
+            transition: transform 0.3s ease;
+        }
+        
+        .logo:hover {
+            transform: scale(1.05);
+        }
+        
+        .header-brand {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--bompard-black);
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+        }
+        
+        .header-subtitle {
+            font-size: 0.75rem;
+            color: var(--bompard-gray);
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-top: 4px;
+        }
+        
+        /* Hero Section with Video */
+        .hero-section {
+            position: relative;
+            width: 100%;
+            height: 70vh;
+            min-height: 500px;
+            max-height: 800px;
+            overflow: hidden;
+            background: var(--bompard-black);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .hero-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.7;
+            z-index: 1;
+        }
+        
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(26, 26, 26, 0.6) 0%, rgba(26, 26, 26, 0.4) 100%);
+            z-index: 2;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 3;
             text-align: center;
-            color: #666;
-            margin-bottom: 40px;
-            font-size: 1.1em;
+            color: var(--bompard-white);
+            padding: 0 40px;
+            max-width: 800px;
+        }
+        
+        .hero-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 4.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: -2px;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            line-height: 1.1;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.3rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0.95;
+            margin-bottom: 30px;
+        }
+        
+        .hero-description {
+            font-size: 1.1rem;
+            font-weight: 300;
+            line-height: 1.8;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .hero-divider {
+            width: 100px;
+            height: 2px;
+            background: var(--bompard-white);
+            margin: 30px auto;
+            opacity: 0.5;
+        }
+        
+        /* Video Frame Decoration */
+        .video-frame-decoration {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 80px 50px;
+            position: relative;
+        }
+        
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            text-align: center;
+            color: var(--bompard-black);
+            margin-bottom: 15px;
+            letter-spacing: -1px;
+        }
+        
+        .section-subtitle {
+            text-align: center;
+            color: var(--bompard-gray);
+            margin-bottom: 60px;
+            font-size: 1.15rem;
+            font-weight: 300;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.8;
+        }
+        
+        /* Form Container */
+        .form-container {
+            background: var(--bompard-white);
+            border-radius: 24px;
+            padding: 60px;
+            box-shadow: var(--shadow-luxury);
+            margin-bottom: 50px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .form-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--bompard-black), var(--bompard-gold), var(--bompard-black));
         }
         
         .upload-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
+            gap: 40px;
+            margin-bottom: 50px;
         }
         
         .upload-box {
-            border: 3px dashed #667eea;
-            border-radius: 15px;
-            padding: 30px;
+            border: 2px dashed var(--bompard-light-gray);
+            border-radius: 20px;
+            padding: 50px 40px;
             text-align: center;
-            background: #f8f9ff;
-            transition: all 0.3s ease;
+            background: linear-gradient(135deg, var(--bompard-beige) 0%, var(--bompard-cream) 100%);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .upload-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--bompard-black), var(--bompard-gold), var(--bompard-black));
+            opacity: 0;
+            transition: opacity 0.4s ease;
         }
         
         .upload-box:hover {
-            border-color: #764ba2;
-            background: #f0f2ff;
+            border-color: var(--bompard-black);
+            background: var(--bompard-white);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .upload-box:hover::before {
+            opacity: 1;
         }
         
         .upload-box.dragover {
-            border-color: #764ba2;
-            background: #e8ebff;
+            border-color: var(--bompard-black);
+            background: var(--bompard-white);
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-strong);
+        }
+        
+        .upload-box.dragover::before {
+            opacity: 1;
         }
         
         .upload-box label {
             display: block;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 1.2em;
+            font-weight: 500;
+            color: var(--bompard-black);
+            margin-bottom: 25px;
+            font-size: 1.2rem;
+            font-family: 'Playfair Display', serif;
         }
         
         .file-input-wrapper {
@@ -88,101 +317,220 @@
         }
         
         .file-button {
-            background: #667eea;
-            color: white;
-            padding: 12px 24px;
+            background: var(--bompard-black);
+            color: var(--bompard-white);
+            padding: 16px 36px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
-            font-size: 1em;
-            font-weight: 600;
-            transition: background 0.3s ease;
+            font-size: 0.95rem;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .file-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .file-button:hover::before {
+            width: 300px;
+            height: 300px;
         }
         
         .file-button:hover {
-            background: #764ba2;
+            background: var(--bompard-gray);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
         }
         
         .file-name {
-            margin-top: 10px;
-            color: #666;
-            font-size: 0.9em;
+            margin-top: 18px;
+            color: var(--bompard-gray);
+            font-size: 0.9rem;
             word-break: break-all;
+            font-weight: 300;
         }
         
         .file-preview {
-            margin-top: 15px;
+            margin-top: 25px;
             max-width: 100%;
-            max-height: 200px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-height: 280px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-soft);
+            border: 2px solid var(--bompard-light-gray);
+            transition: transform 0.3s ease;
+        }
+        
+        .file-preview:hover {
+            transform: scale(1.02);
         }
         
         .refinements-section {
-            margin-bottom: 30px;
+            margin-bottom: 50px;
         }
         
         .refinements-section label {
             display: block;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 1.1em;
+            font-weight: 500;
+            color: var(--bompard-black);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-family: 'Playfair Display', serif;
         }
         
         .refinements-section textarea {
             width: 100%;
-            min-height: 120px;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            font-size: 1em;
-            font-family: inherit;
+            min-height: 160px;
+            padding: 24px;
+            border: 2px solid var(--bompard-light-gray);
+            border-radius: 16px;
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
             resize: vertical;
-            transition: border-color 0.3s ease;
+            transition: all 0.3s ease;
+            background: var(--bompard-white);
+            color: var(--bompard-black);
         }
         
         .refinements-section textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--bompard-black);
+            box-shadow: 0 0 0 4px rgba(26, 26, 26, 0.1);
         }
         
         .refinements-section .hint {
-            margin-top: 8px;
-            color: #666;
-            font-size: 0.9em;
+            margin-top: 12px;
+            color: var(--bompard-gray);
+            font-size: 0.85rem;
             font-style: italic;
+            font-weight: 300;
+        }
+        
+        .size-section {
+            margin-bottom: 50px;
+            padding: 40px;
+            background: linear-gradient(135deg, var(--bompard-beige) 0%, var(--bompard-cream) 100%);
+            border-radius: 16px;
+            border: 1px solid var(--bompard-light-gray);
+        }
+        
+        .size-section label {
+            display: block;
+            font-weight: 500;
+            color: var(--bompard-black);
+            margin-bottom: 25px;
+            font-size: 1.2rem;
+            font-family: 'Playfair Display', serif;
+        }
+        
+        .size-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+            margin-bottom: 15px;
+        }
+        
+        .size-option {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            background: var(--bompard-white);
+            border: 2px solid var(--bompard-light-gray);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .size-option:hover {
+            border-color: var(--bompard-black);
+            background: var(--bompard-cream);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+        
+        .size-option input[type="radio"] {
+            margin-right: 12px;
+            accent-color: var(--bompard-black);
+            width: 18px;
+            height: 18px;
+        }
+        
+        .size-option span {
+            font-size: 0.95rem;
+            color: var(--bompard-black);
+            font-weight: 400;
+        }
+        
+        .size-option input[type="radio"]:checked + span {
+            font-weight: 600;
         }
         
         .generate-button {
             width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 18px;
+            background: var(--bompard-black);
+            color: var(--bompard-white);
+            padding: 24px;
             border: none;
-            border-radius: 12px;
-            font-size: 1.3em;
-            font-weight: 700;
+            border-radius: 16px;
+            font-size: 1.15rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .generate-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .generate-button:hover:not(:disabled)::before {
+            width: 400px;
+            height: 400px;
         }
         
         .generate-button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
         }
         
         .generate-button:disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
+            transform: none;
         }
         
         .result-section {
             display: none;
-            margin-top: 30px;
-            padding-top: 30px;
-            border-top: 2px solid #eee;
+            margin-top: 60px;
+            padding-top: 60px;
+            border-top: 1px solid var(--bompard-light-gray);
         }
         
         .result-section.show {
@@ -191,34 +539,41 @@
         
         .result-image {
             max-width: 100%;
-            border-radius: 15px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-            margin-bottom: 20px;
+            border-radius: 20px;
+            box-shadow: var(--shadow-luxury);
+            margin-bottom: 40px;
+            border: 2px solid var(--bompard-light-gray);
+            transition: transform 0.3s ease;
+        }
+        
+        .result-image:hover {
+            transform: scale(1.01);
         }
         
         .message {
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-weight: 500;
+            padding: 24px 28px;
+            border-radius: 16px;
+            margin-bottom: 40px;
+            font-weight: 400;
+            border-left: 4px solid;
         }
         
         .message.success {
-            background: #d4edda;
+            background: #f0f9f4;
             color: #155724;
-            border: 1px solid #c3e6cb;
+            border-color: #28a745;
         }
         
         .message.error {
-            background: #f8d7da;
+            background: #fff5f5;
             color: #721c24;
-            border: 1px solid #f5c6cb;
+            border-color: #dc3545;
         }
         
         .loading {
             display: none;
             text-align: center;
-            padding: 40px;
+            padding: 80px 40px;
         }
         
         .loading.show {
@@ -226,13 +581,19 @@
         }
         
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            border: 5px solid var(--bompard-light-gray);
+            border-top: 5px solid var(--bompard-black);
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 70px;
+            height: 70px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 30px;
+        }
+        
+        .loading p {
+            font-size: 1.2rem;
+            color: var(--bompard-gray);
+            font-weight: 300;
         }
         
         @keyframes spin {
@@ -241,42 +602,51 @@
         }
         
         .iteration-note {
-            background: #fff3cd;
-            border: 1px solid #ffc107;
-            color: #856404;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--bompard-beige) 0%, var(--bompard-cream) 100%);
+            border: 2px solid var(--bompard-light-gray);
+            color: var(--bompard-black);
+            padding: 28px 32px;
+            border-radius: 16px;
+            margin-bottom: 40px;
+            font-size: 1rem;
+            line-height: 1.8;
+        }
+        
+        .iteration-note strong {
+            font-weight: 600;
         }
         
         .prompt-display {
-            margin-bottom: 20px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border: 2px solid #667eea;
+            margin-bottom: 40px;
+            padding: 40px;
+            background: linear-gradient(135deg, var(--bompard-beige) 0%, var(--bompard-cream) 100%);
+            border-radius: 16px;
+            border: 2px solid var(--bompard-light-gray);
         }
         
         .prompt-display h3 {
-            margin-bottom: 15px;
-            color: #333;
-            font-size: 1.2em;
+            margin-bottom: 25px;
+            color: var(--bompard-black);
+            font-size: 1.3rem;
+            font-family: 'Playfair Display', serif;
+            font-weight: 600;
         }
         
         .prompt-box {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
+            background: var(--bompard-white);
+            border: 2px solid var(--bompard-light-gray);
+            border-radius: 12px;
+            padding: 24px;
             font-family: 'Courier New', monospace;
-            font-size: 0.85em;
+            font-size: 0.85rem;
             white-space: pre-wrap;
             word-wrap: break-word;
-            max-height: 400px;
+            max-height: 450px;
             overflow-y: auto;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
             display: none;
-            line-height: 1.5;
+            line-height: 1.7;
+            color: var(--bompard-black);
         }
         
         .prompt-box.show {
@@ -284,108 +654,219 @@
         }
         
         .toggle-prompt-button {
-            background: #667eea;
-            color: white;
+            background: var(--bompard-black);
+            color: var(--bompard-white);
             border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 0.9em;
-            transition: background 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
         }
         
         .toggle-prompt-button:hover {
-            background: #764ba2;
+            background: var(--bompard-gray);
         }
         
         .prompt-summary {
-            font-size: 0.9em;
-            color: #666;
-            margin-bottom: 10px;
-            padding: 8px;
-            background: #e9ecef;
-            border-radius: 5px;
+            font-size: 0.9rem;
+            color: var(--bompard-gray);
+            margin-bottom: 20px;
+            padding: 16px;
+            background: var(--bompard-white);
+            border-radius: 8px;
+            border: 1px solid var(--bompard-light-gray);
         }
         
-        @media (max-width: 768px) {
+        @media (max-width: 1200px) {
+            .hero-title {
+                font-size: 3.5rem;
+            }
+            
+            .container {
+                padding: 60px 30px;
+            }
+            
+            .form-container {
+                padding: 40px 30px;
+            }
+        }
+        
+        @media (max-width: 968px) {
             .upload-section {
                 grid-template-columns: 1fr;
             }
             
-            .container {
-                padding: 20px;
+            .hero-section {
+                height: 60vh;
+                min-height: 400px;
             }
             
-            h1 {
-                font-size: 2em;
+            .hero-title {
+                font-size: 2.8rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 1.1rem;
+            }
+            
+            .section-title {
+                font-size: 2.2rem;
+            }
+            
+            .header-content {
+                padding: 0 30px;
+            }
+            
+            .size-options {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .hero-title {
+                font-size: 2.2rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 0.95rem;
+            }
+            
+            .header-title {
+                font-size: 1.3rem;
+            }
+            
+            .header-subtitle {
+                display: none;
+            }
+            
+            .logo {
+                height: 45px;
+            }
+            
+            .section-title {
+                font-size: 1.8rem;
+            }
+            
+            .container {
+                padding: 40px 20px;
+            }
+            
+            .form-container {
+                padding: 30px 20px;
             }
         }
     </style>
 </head>
 <body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='img/logo_bompard.png') }}" alt="Bompard" class="logo" onerror="this.src='{{ url_for('static', filename='img/BOMPARD_noir.png') }}'; this.onerror=null;">
+                <div class="header-brand">
+                    <div class="header-title">Bompard</div>
+                    <div class="header-subtitle">Paris</div>
+                </div>
+            </div>
+            <div class="header-brand">
+                <div class="header-title">Virtual Try-On</div>
+                <div class="header-subtitle">Luxury Content Creation</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="hero-section">
+        <video class="hero-video" autoplay muted loop playsinline>
+            <source src="{{ url_for('static', filename='img/video_intro.mp4') }}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="hero-overlay"></div>
+        <div class="video-frame-decoration"></div>
+        <div class="hero-content">
+            <h1 class="hero-title">Virtual Try-On</h1>
+            <div class="hero-divider"></div>
+            <p class="hero-subtitle">AI-Powered Luxury Fashion</p>
+            <p class="hero-description">
+                Create professional garment swaps with photorealistic precision. 
+                Perfect for luxury e-commerce and editorial content creation.
+            </p>
+        </div>
+    </div>
+    
     <div class="container">
-        <h1>🧶 Bompard Garment Swap</h1>
-        <p class="subtitle">Upload model and flat-lay images to generate professional garment swaps</p>
+        <h2 class="section-title">Create Your Garment Swap</h2>
+        <p class="section-subtitle">
+            Upload a model image and a flat-lay garment to generate professional, 
+            photorealistic virtual try-on results. Perfect for showcasing luxury cashmere collections.
+        </p>
         
-        <form id="swapForm">
-            <div class="upload-section">
-                <div class="upload-box" id="modelBox">
-                    <label for="model_file">📸 Model Image (Porte)</label>
-                    <div class="file-input-wrapper">
-                        <input type="file" id="model_file" name="model_file" class="file-input" accept="image/*" required>
-                        <button type="button" class="file-button" onclick="document.getElementById('model_file').click()">Choose File</button>
+        <div class="form-container">
+            <form id="swapForm">
+                <div class="upload-section">
+                    <div class="upload-box" id="modelBox">
+                        <label for="model_file">Model Image</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="model_file" name="model_file" class="file-input" accept="image/*" required>
+                            <button type="button" class="file-button" onclick="document.getElementById('model_file').click()">Choose File</button>
+                        </div>
+                        <div class="file-name" id="modelFileName"></div>
+                        <img id="modelPreview" class="file-preview" style="display: none;">
                     </div>
-                    <div class="file-name" id="modelFileName"></div>
-                    <img id="modelPreview" class="file-preview" style="display: none;">
+                    
+                    <div class="upload-box" id="flatlayBox">
+                        <label for="flatlay_file">Flat-lay Image</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="flatlay_file" name="flatlay_file" class="file-input" accept="image/*" required>
+                            <button type="button" class="file-button" onclick="document.getElementById('flatlay_file').click()">Choose File</button>
+                        </div>
+                        <div class="file-name" id="flatlayFileName"></div>
+                        <img id="flatlayPreview" class="file-preview" style="display: none;">
+                    </div>
                 </div>
                 
-                <div class="upload-box" id="flatlayBox">
-                    <label for="flatlay_file">📐 Flat-lay Image (Aplat)</label>
-                    <div class="file-input-wrapper">
-                        <input type="file" id="flatlay_file" name="flatlay_file" class="file-input" accept="image/*" required>
-                        <button type="button" class="file-button" onclick="document.getElementById('flatlay_file').click()">Choose File</button>
+                <div class="refinements-section">
+                    <label for="refinements">Refinement Instructions (Optional)</label>
+                    <textarea 
+                        id="refinements" 
+                        name="refinements" 
+                        placeholder="Add refinement instructions to improve the result...&#10;&#10;Examples:&#10;• Make the garment color match the flat-lay exactly&#10;• The sleeves must be pink, not grey&#10;• Keep the model's face identical to the original"></textarea>
+                    <div class="hint">These instructions will be added to the prompt to refine the result. Leave empty for first generation.</div>
+                </div>
+                
+                <div class="size-section">
+                    <label for="output_size">Output Image Size</label>
+                    <div class="size-options">
+                        <label class="size-option">
+                            <input type="radio" name="output_size" value="match_model" checked>
+                            <span>Match Model Image (Default)</span>
+                        </label>
+                        <label class="size-option">
+                            <input type="radio" name="output_size" value="original">
+                            <span>Original (as generated)</span>
+                        </label>
+                        <label class="size-option">
+                            <input type="radio" name="output_size" value="1024">
+                            <span>1024px (Medium)</span>
+                        </label>
+                        <label class="size-option">
+                            <input type="radio" name="output_size" value="2048">
+                            <span>2048px (Large)</span>
+                        </label>
+                        <label class="size-option">
+                            <input type="radio" name="output_size" value="4096">
+                            <span>4096px (Extra Large)</span>
+                        </label>
                     </div>
-                    <div class="file-name" id="flatlayFileName"></div>
-                    <img id="flatlayPreview" class="file-preview" style="display: none;">
+                    <div class="hint">Default: Output will match the model image size. Select a different size to override.</div>
                 </div>
-            </div>
-            
-            <div class="refinements-section">
-                <label for="refinements">✏️ Refinement Instructions (Optional)</label>
-                <textarea 
-                    id="refinements" 
-                    name="refinements" 
-                    placeholder="Add refinement instructions here...&#10;&#10;Examples:&#10;- Make the garment color match the flat-lay exactly&#10;- The sleeves must be pink, not grey&#10;- Keep the model's face identical to the original"></textarea>
-                <div class="hint">These instructions will be added to the prompt to refine the result. Leave empty for first generation.</div>
-            </div>
-            
-            <div class="size-section">
-                <label for="output_size">🖼️ Output Image Size</label>
-                <div class="size-options">
-                    <label class="size-option">
-                        <input type="radio" name="output_size" value="original" checked>
-                        <span>Match Model Image (Default) ✨</span>
-                    </label>
-                    <label class="size-option">
-                        <input type="radio" name="output_size" value="1024">
-                        <span>1024px (Medium)</span>
-                    </label>
-                    <label class="size-option">
-                        <input type="radio" name="output_size" value="2048">
-                        <span>2048px (Large)</span>
-                    </label>
-                    <label class="size-option">
-                        <input type="radio" name="output_size" value="4096">
-                        <span>4096px (Extra Large)</span>
-                    </label>
-                </div>
-                <div class="hint">Default: Output will match the model image size. Select a different size to override.</div>
-            </div>
-            
-            <button type="submit" class="generate-button" id="generateButton">
-                🚀 Generate Garment Swap
-            </button>
-        </form>
+                
+                <button type="submit" class="generate-button" id="generateButton">
+                    Generate Garment Swap
+                </button>
+            </form>
+        </div>
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
@@ -396,11 +877,11 @@
         
         <div class="result-section" id="resultSection">
             <div class="iteration-note">
-                💡 <strong>Tip:</strong> Review the image below. If you want to improve it, add refinement instructions above and click "Generate Garment Swap" again.
+                <strong>Tip:</strong> Review the image below. If you want to improve it, add refinement instructions above and click "Generate Garment Swap" again to iterate.
             </div>
             
             <div class="prompt-display" id="promptDisplay" style="display: none;">
-                <h3>📝 Prompt Used:</h3>
+                <h3>Prompt Used</h3>
                 <div class="prompt-box" id="promptBox"></div>
                 <button type="button" class="toggle-prompt-button" onclick="togglePrompt()">Show/Hide Full Prompt</button>
             </div>
@@ -505,7 +986,6 @@
                 });
                 
                 if (!response.ok) {
-                    // Try to get error message from response
                     let errorMsg = 'Server error';
                     try {
                         const errorData = await response.json();
@@ -513,7 +993,7 @@
                     } catch (e) {
                         errorMsg = `HTTP ${response.status}: ${response.statusText}`;
                     }
-                    message.innerHTML = '<div class="message error">❌ ' + errorMsg + '</div>';
+                    message.innerHTML = '<div class="message error">' + errorMsg + '</div>';
                     generateButton.disabled = false;
                     loading.classList.remove('show');
                     return;
@@ -522,7 +1002,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    message.innerHTML = '<div class="message success">✅ ' + data.message + '</div>';
+                    message.innerHTML = '<div class="message success">' + data.message + '</div>';
                     document.getElementById('resultImage').src = data.image_url + '?t=' + new Date().getTime();
                     resultSection.classList.add('show');
                     
@@ -533,10 +1013,9 @@
                         if (promptDisplay && promptBox) {
                             promptDisplay.style.display = 'block';
                             promptBox.textContent = data.prompt_used;
-                            promptBox.classList.remove('show'); // Hide by default
+                            promptBox.classList.remove('show');
                             promptVisible = false;
                             
-                            // Add/update summary
                             let summary = promptBox.previousElementSibling;
                             if (!summary || !summary.classList.contains('prompt-summary')) {
                                 summary = document.createElement('div');
@@ -547,7 +1026,7 @@
                         }
                     }
                 } else {
-                    message.innerHTML = '<div class="message error">❌ ' + (data.error || 'An error occurred') + '</div>';
+                    message.innerHTML = '<div class="message error">' + (data.error || 'An error occurred') + '</div>';
                 }
             } catch (error) {
                 console.error('Fetch error:', error);
@@ -555,7 +1034,7 @@
                 if (error.message === 'Failed to fetch') {
                     errorMsg = 'Cannot connect to server. Make sure the Flask server is running on http://127.0.0.1:5000';
                 }
-                message.innerHTML = '<div class="message error">❌ Error: ' + errorMsg + '</div>';
+                message.innerHTML = '<div class="message error">Error: ' + errorMsg + '</div>';
             } finally {
                 generateButton.disabled = false;
                 loading.classList.remove('show');
@@ -564,4 +1043,3 @@
     </script>
 </body>
 </html>
-

@@ -9,6 +9,31 @@ from flask import Flask, render_template, request, jsonify, send_file, url_for
 from werkzeug.utils import secure_filename
 import uuid
 
+# Load environment variables from .env file (for local development)
+# This MUST happen before importing Config
+env_path = Path(__file__).parent / '.env'
+if env_path.exists():
+    # Try to use python-dotenv first
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(dotenv_path=env_path, override=True)
+    except ImportError:
+        pass  # python-dotenv not installed, will use manual parsing
+    
+    # Manual parsing as fallback (handles BOM and cases where python-dotenv fails)
+    try:
+        with open(env_path, 'r', encoding='utf-8-sig') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip().strip('"').strip("'")
+                    if key and value:
+                        os.environ[key] = value
+    except Exception:
+        pass  # If parsing fails, continue with existing env vars
+
 from config import Config
 from gemini_client import GeminiGarmentSwapClient
 from prompt_generator import PromptGenerator
@@ -263,15 +288,20 @@ if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     # Only run in debug mode if explicitly set
     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    # Disable reloader on Windows (causes socket errors on Ctrl+C)
+    # You can enable it by setting FLASK_RELOADER=True if needed
+    use_reloader = os.getenv('FLASK_RELOADER', 'False').lower() == 'true' and os.name != 'nt'
+    
     print("="*70)
-    print(f"Starting Bompard Garment Swap on port {port}")
+    print("Bompard Garment Swap - Virtual Try-On")
     print("="*70)
-    app.run(host='0.0.0.0', port=port, debug=debug)
-    print("Bompard Garment Swap Web Interface")
-    print("="*70)
-    print("\nStarting server...")
-    print("Open your browser and go to: http://127.0.0.1:5000")
+    print(f"Starting server on port {port}")
+    print(f"Debug mode: {debug}")
+    print(f"Auto-reloader: {use_reloader}")
+    print(f"Open your browser and go to: http://127.0.0.1:{port}")
     print("\nPress Ctrl+C to stop the server")
     print("="*70)
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    print()
+    
+    app.run(host='0.0.0.0', port=port, debug=debug, use_reloader=use_reloader)
 
