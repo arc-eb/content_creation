@@ -1,0 +1,16 @@
+# Prompt Refinement Instructions
+# 
+# Add your refinement instructions here. They will be appended to the base prompt.
+# Examples:
+#
+# - Make the garment color match the flat-lay more precisely
+# - Keep the model's expression exactly as in the original image
+# - Preserve the exact texture from the flat-lay without any smoothing
+# - Do not modify the lighting, shadows, or highlights at all
+# - The garment buttons must match the flat-lay exactly
+# - Ensure the cable knit pattern is clearly visible and matches the flat-lay
+# - Do not change the model's hair, makeup, or any facial features
+
+the sleeves are grey, while the the picture of the aplat_rose.png does not have grey sleeves. Also make sure the color is exactly the same
+
+

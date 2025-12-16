@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bompard Garment Swap</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .upload-box {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-box:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+        
+        .upload-box.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+        }
+        
+        .upload-box label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .file-button {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+        
+        .file-button:hover {
+            background: #764ba2;
+        }
+        
+        .file-name {
+            margin-top: 10px;
+            color: #666;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+        
+        .file-preview {
+            margin-top: 15px;
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .refinements-section {
+            margin-bottom: 30px;
+        }
+        
+        .refinements-section label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .refinements-section textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1em;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+        
+        .refinements-section textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .refinements-section .hint {
+            margin-top: 8px;
+            color: #666;
+            font-size: 0.9em;
+            font-style: italic;
+        }
+        
+        .generate-button {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.3em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-bottom: 30px;
+        }
+        
+        .generate-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .generate-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .result-section {
+            display: none;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+        }
+        
+        .result-section.show {
+            display: block;
+        }
+        
+        .result-image {
+            max-width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            margin-bottom: 20px;
+        }
+        
+        .message {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .iteration-note {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .prompt-display {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+        }
+        
+        .prompt-display h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.2em;
+        }
+        
+        .prompt-box {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            display: none;
+            line-height: 1.5;
+        }
+        
+        .prompt-box.show {
+            display: block;
+        }
+        
+        .toggle-prompt-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s ease;
+        }
+        
+        .toggle-prompt-button:hover {
+            background: #764ba2;
+        }
+        
+        .prompt-summary {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #e9ecef;
+            border-radius: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .upload-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧶 Bompard Garment Swap</h1>
+        <p class="subtitle">Upload model and flat-lay images to generate professional garment swaps</p>
+        
+        <form id="swapForm">
+            <div class="upload-section">
+                <div class="upload-box" id="modelBox">
+                    <label for="model_file">📸 Model Image (Porte)</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="model_file" name="model_file" class="file-input" accept="image/*" required>
+                        <button type="button" class="file-button" onclick="document.getElementById('model_file').click()">Choose File</button>
+                    </div>
+                    <div class="file-name" id="modelFileName"></div>
+                    <img id="modelPreview" class="file-preview" style="display: none;">
+                </div>
+                
+                <div class="upload-box" id="flatlayBox">
+                    <label for="flatlay_file">📐 Flat-lay Image (Aplat)</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="flatlay_file" name="flatlay_file" class="file-input" accept="image/*" required>
+                        <button type="button" class="file-button" onclick="document.getElementById('flatlay_file').click()">Choose File</button>
+                    </div>
+                    <div class="file-name" id="flatlayFileName"></div>
+                    <img id="flatlayPreview" class="file-preview" style="display: none;">
+                </div>
+            </div>
+            
+            <div class="refinements-section">
+                <label for="refinements">✏️ Refinement Instructions (Optional)</label>
+                <textarea 
+                    id="refinements" 
+                    name="refinements" 
+                    placeholder="Add refinement instructions here...&#10;&#10;Examples:&#10;- Make the garment color match the flat-lay exactly&#10;- The sleeves must be pink, not grey&#10;- Keep the model's face identical to the original"></textarea>
+                <div class="hint">These instructions will be added to the prompt to refine the result. Leave empty for first generation.</div>
+            </div>
+            
+            <div class="size-section">
+                <label for="output_size">🖼️ Output Image Size</label>
+                <div class="size-options">
+                    <label class="size-option">
+                        <input type="radio" name="output_size" value="original" checked>
+                        <span>Match Model Image (Default) ✨</span>
+                    </label>
+                    <label class="size-option">
+                        <input type="radio" name="output_size" value="1024">
+                        <span>1024px (Medium)</span>
+                    </label>
+                    <label class="size-option">
+                        <input type="radio" name="output_size" value="2048">
+                        <span>2048px (Large)</span>
+                    </label>
+                    <label class="size-option">
+                        <input type="radio" name="output_size" value="4096">
+                        <span>4096px (Extra Large)</span>
+                    </label>
+                </div>
+                <div class="hint">Default: Output will match the model image size. Select a different size to override.</div>
+            </div>
+            
+            <button type="submit" class="generate-button" id="generateButton">
+                🚀 Generate Garment Swap
+            </button>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Generating your image... This may take 30-60 seconds</p>
+        </div>
+        
+        <div id="message"></div>
+        
+        <div class="result-section" id="resultSection">
+            <div class="iteration-note">
+                💡 <strong>Tip:</strong> Review the image below. If you want to improve it, add refinement instructions above and click "Generate Garment Swap" again.
+            </div>
+            
+            <div class="prompt-display" id="promptDisplay" style="display: none;">
+                <h3>📝 Prompt Used:</h3>
+                <div class="prompt-box" id="promptBox"></div>
+                <button type="button" class="toggle-prompt-button" onclick="togglePrompt()">Show/Hide Full Prompt</button>
+            </div>
+            
+            <img id="resultImage" class="result-image" alt="Generated result">
+        </div>
+    </div>
+    
+    <script>
+        // File input handlers
+        document.getElementById('model_file').addEventListener('change', function(e) {
+            handleFileSelect(e.target.files[0], 'modelFileName', 'modelPreview');
+            setupDragAndDrop('modelBox', 'model_file');
+        });
+        
+        document.getElementById('flatlay_file').addEventListener('change', function(e) {
+            handleFileSelect(e.target.files[0], 'flatlayFileName', 'flatlayPreview');
+            setupDragAndDrop('flatlayBox', 'flatlay_file');
+        });
+        
+        function handleFileSelect(file, fileNameId, previewId) {
+            if (file) {
+                document.getElementById(fileNameId).textContent = file.name;
+                const preview = document.getElementById(previewId);
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Drag and drop
+        function setupDragAndDrop(boxId, inputId) {
+            const box = document.getElementById(boxId);
+            const input = document.getElementById(inputId);
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                box.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                box.addEventListener(eventName, () => box.classList.add('dragover'), false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                box.addEventListener(eventName, () => box.classList.remove('dragover'), false);
+            });
+            
+            box.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) {
+                    input.files = files;
+                    handleFileSelect(files[0], inputId === 'model_file' ? 'modelFileName' : 'flatlayFileName', 
+                                   inputId === 'model_file' ? 'modelPreview' : 'flatlayPreview');
+                }
+            }, false);
+        }
+        
+        setupDragAndDrop('modelBox', 'model_file');
+        setupDragAndDrop('flatlayBox', 'flatlay_file');
+        
+        // Toggle prompt display
+        let promptVisible = false;
+        window.togglePrompt = function() {
+            promptVisible = !promptVisible;
+            const promptBox = document.getElementById('promptBox');
+            if (promptVisible) {
+                promptBox.classList.add('show');
+            } else {
+                promptBox.classList.remove('show');
+            }
+        };
+        
+        // Form submission
+        document.getElementById('swapForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const generateButton = document.getElementById('generateButton');
+            const loading = document.getElementById('loading');
+            const message = document.getElementById('message');
+            const resultSection = document.getElementById('resultSection');
+            
+            // Show loading
+            generateButton.disabled = true;
+            loading.classList.add('show');
+            message.innerHTML = '';
+            resultSection.classList.remove('show');
+            
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    // Try to get error message from response
+                    let errorMsg = 'Server error';
+                    try {
+                        const errorData = await response.json();
+                        errorMsg = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+                    } catch (e) {
+                        errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                    message.innerHTML = '<div class="message error">❌ ' + errorMsg + '</div>';
+                    generateButton.disabled = false;
+                    loading.classList.remove('show');
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    message.innerHTML = '<div class="message success">✅ ' + data.message + '</div>';
+                    document.getElementById('resultImage').src = data.image_url + '?t=' + new Date().getTime();
+                    resultSection.classList.add('show');
+                    
+                    // Display prompt if available
+                    if (data.prompt_used) {
+                        const promptDisplay = document.getElementById('promptDisplay');
+                        const promptBox = document.getElementById('promptBox');
+                        if (promptDisplay && promptBox) {
+                            promptDisplay.style.display = 'block';
+                            promptBox.textContent = data.prompt_used;
+                            promptBox.classList.remove('show'); // Hide by default
+                            promptVisible = false;
+                            
+                            // Add/update summary
+                            let summary = promptBox.previousElementSibling;
+                            if (!summary || !summary.classList.contains('prompt-summary')) {
+                                summary = document.createElement('div');
+                                summary.className = 'prompt-summary';
+                                promptBox.parentNode.insertBefore(summary, promptBox);
+                            }
+                            summary.innerHTML = `Prompt length: ${data.full_prompt_length} characters | Base: ${data.base_prompt_length} chars`;
+                        }
+                    }
+                } else {
+                    message.innerHTML = '<div class="message error">❌ ' + (data.error || 'An error occurred') + '</div>';
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                let errorMsg = error.message || 'Unknown error';
+                if (error.message === 'Failed to fetch') {
+                    errorMsg = 'Cannot connect to server. Make sure the Flask server is running on http://127.0.0.1:5000';
+                }
+                message.innerHTML = '<div class="message error">❌ Error: ' + errorMsg + '</div>';
+            } finally {
+                generateButton.disabled = false;
+                loading.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>
+
