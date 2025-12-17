@@ -92,7 +92,7 @@ def generate():
         
         model_file = request.files['model_file']
         flatlay_file = request.files['flatlay_file']
-        reference_file = request.files.get('reference_image')  # Optional reference image
+        additional_file = request.files.get('additional_image')  # Optional additional image
         refinements = request.form.get('refinements', '').strip()
         output_size = request.form.get('output_size', 'original')  # Get output size preference
         
@@ -121,16 +121,16 @@ def generate():
         model_file.save(model_path)
         flatlay_file.save(flatlay_path)
         
-        # Handle optional reference image
-        reference_path = None
-        if reference_file and reference_file.filename != '':
-            if not allowed_file(reference_file.filename):
-                return jsonify({'error': 'Invalid reference image file type. Allowed: PNG, JPG, JPEG, WEBP'}), 400
-            reference_filename = secure_filename(reference_file.filename)
-            reference_ext = reference_filename.rsplit('.', 1)[1].lower()
-            reference_path = Path(app.config['UPLOAD_FOLDER']) / f"{session_id}_reference.{reference_ext}"
-            reference_file.save(reference_path)
-            logger.info(f"Reference image saved: {reference_path}")
+        # Handle optional additional image
+        additional_path = None
+        if additional_file and additional_file.filename != '':
+            if not allowed_file(additional_file.filename):
+                return jsonify({'error': 'Invalid additional image file type. Allowed: PNG, JPG, JPEG, WEBP'}), 400
+            additional_filename = secure_filename(additional_file.filename)
+            additional_ext = additional_filename.rsplit('.', 1)[1].lower()
+            additional_path = Path(app.config['UPLOAD_FOLDER']) / f"{session_id}_additional.{additional_ext}"
+            additional_file.save(additional_path)
+            logger.info(f"Additional image saved: {additional_path}")
         
         # Get model image dimensions to use as default output size
         try:
@@ -157,23 +157,28 @@ def generate():
             logger.info(f"Cleaned refinements (length: {len(clean_refinements)}): {repr(clean_refinements[:200])}")
             
             if clean_refinements.strip():
-                # Limit refinement length to avoid API issues
-                max_refinement_length = 500
+                # Limit refinement length to avoid API issues (increased for iterations)
+                max_refinement_length = 2000  # Increased to allow multiple iterations
                 if len(clean_refinements.strip()) > max_refinement_length:
                     logger.warning(f"Refinements too long ({len(clean_refinements)} chars), truncating to {max_refinement_length}")
                     clean_refinements = clean_refinements.strip()[:max_refinement_length]
                 
                 full_prompt = base_prompt
                 full_prompt += "\n\n"
-                full_prompt += "ADDITIONAL REFINEMENTS:"
-                full_prompt += "\n"
-                full_prompt += clean_refinements.strip()
                 
-                # Add note about reference image if provided
-                if reference_path:
-                    full_prompt += "\n\nNOTE: A reference image is provided. Use it as additional guidance for the generation."
+                # If additional image is provided, combine it with refinements in a single note
+                if additional_path:
+                    full_prompt += "NOTE: An additional image is provided for guidance. Apply these refinement instructions to guide the generation:"
+                    full_prompt += "\n"
+                    full_prompt += clean_refinements.strip()
+                else:
+                    full_prompt += "ADDITIONAL REFINEMENTS:"
+                    full_prompt += "\n"
+                    full_prompt += clean_refinements.strip()
                 
                 logger.info("✓ Refinements added to prompt")
+                if additional_path:
+                    logger.info("✓ Additional image note combined with refinements")
                 logger.debug(f"Full prompt with refinements:\n{full_prompt}")
             else:
                 full_prompt = base_prompt
@@ -182,9 +187,9 @@ def generate():
             full_prompt = base_prompt
             logger.info("No refinements provided, using base prompt only")
         
-        # Add note about reference image if provided (even without refinements)
-        if reference_path and not refinements:
-            full_prompt += "\n\nNOTE: A reference image is provided. Use it as additional guidance for the generation."
+        # Add note about additional image if provided (even without refinements)
+        if additional_path and not refinements:
+            full_prompt += "\n\nNOTE: An additional image is provided. Use it as additional guidance for the generation."
         
         # Log prompt length
         logger.info(f"Final prompt length: {len(full_prompt)} characters")
@@ -228,7 +233,7 @@ def generate():
                 prompt=full_prompt,
                 output_path=output_path,
                 max_output_size=max_output_size,
-                reference_image_path=reference_path,  # Optional reference image
+                additional_image_path=additional_path,  # Optional additional image
             )
         except Exception as e:
             logger.error(f"Error in garment swap: {e}", exc_info=True)
@@ -267,7 +272,13 @@ def generate():
                     "Try: shorter refinements, smaller images, or wait and retry"
                 )
             
-            return jsonify({'error': error_msg}), 500
+            # Include prompt in error response so user can see what was used
+            return jsonify({
+                'error': error_msg,
+                'prompt_used': full_prompt,
+                'base_prompt_length': len(base_prompt),
+                'full_prompt_length': len(full_prompt)
+            }), 500
         
         if result_path and result_path.exists():
             refinements_applied = bool(refinements and clean_refinements.strip())
@@ -286,7 +297,12 @@ def generate():
                 'full_prompt_length': len(full_prompt)
             })
         else:
-            return jsonify({'error': 'Failed to generate image. Please check the logs.'}), 500
+            return jsonify({
+                'error': 'Failed to generate image. Please check the logs.',
+                'prompt_used': full_prompt,
+                'base_prompt_length': len(base_prompt),
+                'full_prompt_length': len(full_prompt)
+            }), 500
             
     except Exception as e:
         logger.error(f"Error in generate endpoint: {e}", exc_info=True)
@@ -296,7 +312,16 @@ def generate():
         # Make error message more user-friendly
         if 'content' in error_msg.lower() or 'parts' in error_msg.lower():
             error_msg = "API response error. The model may have returned an unexpected format. Please try again or check the console for details."
-        return jsonify({'error': f'Error generating image: {error_msg}'}), 500
+        
+        # Include prompt if it was built (may not exist if error occurred early)
+        error_response = {'error': f'Error generating image: {error_msg}'}
+        if 'full_prompt' in locals():
+            error_response['prompt_used'] = full_prompt
+            if 'base_prompt' in locals():
+                error_response['base_prompt_length'] = len(base_prompt)
+                error_response['full_prompt_length'] = len(full_prompt)
+        
+        return jsonify(error_response), 500
 
 
 @app.route('/image/<filename>')

@@ -366,13 +366,14 @@
         }
         
         .file-preview {
-            margin-top: 25px;
+            margin: 25px auto 0;
             max-width: 100%;
             max-height: 280px;
             border-radius: 16px;
             box-shadow: var(--shadow-soft);
             border: 2px solid var(--bompard-light-gray);
             transition: transform 0.3s ease;
+            display: block;
         }
         
         .file-preview:hover {
@@ -554,6 +555,42 @@
             transform: none;
         }
         
+        .button-group {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+        }
+        
+        .reset-button {
+            width: 100%;
+            background: var(--bompard-light-gray);
+            color: var(--bompard-black);
+            padding: 24px;
+            border: 2px solid var(--bompard-light-gray);
+            border-radius: 16px;
+            font-size: 1.15rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .reset-button:hover {
+            background: var(--bompard-gray);
+            color: var(--bompard-white);
+            border-color: var(--bompard-gray);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .reset-button:active {
+            transform: translateY(0);
+        }
+        
         .result-section {
             display: none;
             margin-top: 60px;
@@ -576,6 +613,41 @@
         
         .result-image:hover {
             transform: scale(1.01);
+        }
+        
+        .download-button-container {
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .download-button {
+            background: var(--bompard-black);
+            color: var(--bompard-white);
+            padding: 16px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .download-button:hover {
+            background: var(--bompard-gray);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-strong);
+        }
+        
+        .download-button:active {
+            transform: translateY(0);
         }
         
         .message {
@@ -751,6 +823,10 @@
             .size-options {
                 grid-template-columns: 1fr;
             }
+            
+            .button-group {
+                flex-direction: column;
+            }
         }
         
         @media (max-width: 640px) {
@@ -852,24 +928,28 @@
                 
                 <div class="refinements-section">
                     <label for="refinements">Refinement Instructions (Optional)</label>
+                    <div id="accumulatedRefinements" style="display: none; margin-bottom: 15px; padding: 15px; background: var(--bompard-beige); border-radius: 12px; border: 1px solid var(--bompard-light-gray);">
+                        <div style="font-weight: 600; margin-bottom: 10px; color: var(--bompard-black); font-size: 0.9rem;">Previous Refinements:</div>
+                        <div id="accumulatedRefinementsText" style="font-size: 0.85rem; color: var(--bompard-gray); white-space: pre-wrap; line-height: 1.6;"></div>
+                    </div>
                     <textarea 
                         id="refinements" 
                         name="refinements" 
-                        placeholder="Add refinement instructions to improve the result...&#10;&#10;Examples:&#10;• Make the garment color match the flat-lay exactly&#10;• The sleeves must be pink, not grey&#10;• Keep the model's face identical to the original"></textarea>
-                    <div class="hint">These instructions will be added to the prompt to refine the result. Leave empty for first generation.</div>
+                        placeholder="Add new refinement instructions (will be combined with previous ones)...&#10;&#10;Examples:&#10;• Make the garment color match the flat-lay exactly&#10;• The sleeves must be pink, not grey&#10;• Keep the model's face identical to the original"></textarea>
+                    <div class="hint">These instructions will be added to the prompt to refine the result. Each iteration adds to previous refinements.</div>
                     
                     <div style="margin-top: 30px;">
-                        <label for="reference_image" style="display: block; margin-bottom: 15px;">Reference Image (Optional)</label>
+                        <label for="additional_image" style="display: block; margin-bottom: 15px;">Additional Image (Optional)</label>
                         <div class="file-input-wrapper" style="margin-bottom: 10px;">
-                            <input type="file" id="reference_image" name="reference_image" class="file-input" accept="image/*">
-                            <button type="button" class="file-button" onclick="document.getElementById('reference_image').click()">Choose Reference Image</button>
+                            <input type="file" id="additional_image" name="additional_image" class="file-input" accept="image/*">
+                            <button type="button" class="file-button" onclick="document.getElementById('additional_image').click()">Choose Additional Image</button>
                         </div>
-                        <div class="file-name" id="referenceImageFileName"></div>
-                        <div id="referenceImagePreviewContainer" style="display: none; position: relative; margin-top: 15px; max-width: 100%;">
-                            <img id="referenceImagePreview" class="file-preview" style="max-height: 200px; display: block;">
-                            <button type="button" id="removeReferenceImage" class="close-preview-button" onclick="removeReferenceImage(event)" title="Remove reference image">×</button>
+                        <div class="file-name" id="additionalImageFileName"></div>
+                        <div id="additionalImagePreviewContainer" style="display: none; position: relative; margin-top: 15px; max-width: 100%;">
+                            <img id="additionalImagePreview" class="file-preview" style="max-height: 200px; display: block;">
+                            <button type="button" id="removeAdditionalImage" class="close-preview-button" onclick="removeAdditionalImage(event)" title="Remove additional image">×</button>
                         </div>
-                        <div class="hint" style="margin-top: 12px;">Upload a reference image to guide the generation. This image will be sent along with your refinement instructions.</div>
+                        <div class="hint" style="margin-top: 12px;">Upload an additional image to guide the generation. This image will be sent along with your refinement instructions.</div>
                     </div>
                 </div>
                 
@@ -900,9 +980,14 @@
                     <div class="hint">Default: Output will match the model image size. Select a different size to override.</div>
                 </div>
                 
-                <button type="submit" class="generate-button" id="generateButton">
-                    Generate Garment Swap
-                </button>
+                <div class="button-group">
+                    <button type="submit" class="generate-button" id="generateButton">
+                        Generate Garment Swap
+                    </button>
+                    <button type="button" class="reset-button" id="resetButton" onclick="resetForm()">
+                        Reset Form
+                    </button>
+                </div>
             </form>
         </div>
         
@@ -925,6 +1010,13 @@
             </div>
             
             <img id="resultImage" class="result-image" alt="Generated result">
+            
+            <div class="download-button-container">
+                <button type="button" id="downloadButton" class="download-button" onclick="downloadResultImage()">
+                    <span>↓</span>
+                    <span>Download Image</span>
+                </button>
+            </div>
         </div>
     </div>
     
@@ -940,57 +1032,57 @@
             setupDragAndDrop('flatlayBox', 'flatlay_file');
         });
         
-        // Function to remove reference image
-        function removeReferenceImage(e) {
+        // Function to remove additional image
+        function removeAdditionalImage(e) {
             if (e) {
                 e.preventDefault();
                 e.stopPropagation();
             }
             
             // Clear file input
-            const fileInput = document.getElementById('reference_image');
+            const fileInput = document.getElementById('additional_image');
             if (fileInput) {
                 fileInput.value = '';
             }
             
             // Clear filename display
-            const fileNameElement = document.getElementById('referenceImageFileName');
+            const fileNameElement = document.getElementById('additionalImageFileName');
             if (fileNameElement) {
                 fileNameElement.textContent = '';
             }
             
             // Clear and hide preview image
-            const previewElement = document.getElementById('referenceImagePreview');
+            const previewElement = document.getElementById('additionalImagePreview');
             if (previewElement) {
                 previewElement.src = '';
                 previewElement.style.display = 'none';
             }
             
             // Hide container
-            const containerElement = document.getElementById('referenceImagePreviewContainer');
+            const containerElement = document.getElementById('additionalImagePreviewContainer');
             if (containerElement) {
                 containerElement.style.display = 'none';
             }
         }
         
         // Make function globally accessible
-        window.removeReferenceImage = removeReferenceImage;
+        window.removeAdditionalImage = removeAdditionalImage;
         
-        document.getElementById('reference_image').addEventListener('change', function(e) {
+        document.getElementById('additional_image').addEventListener('change', function(e) {
             if (e.target.files[0]) {
-                handleFileSelect(e.target.files[0], 'referenceImageFileName', 'referenceImagePreview');
-                document.getElementById('referenceImagePreviewContainer').style.display = 'inline-block';
+                handleFileSelect(e.target.files[0], 'additionalImageFileName', 'additionalImagePreview');
+                document.getElementById('additionalImagePreviewContainer').style.display = 'inline-block';
             } else {
-                removeReferenceImage();
+                removeAdditionalImage();
             }
         });
         
         // Use event delegation for the remove button (works even if button is dynamically shown/hidden)
         document.addEventListener('click', function(e) {
-            if (e.target && e.target.id === 'removeReferenceImage') {
+            if (e.target && e.target.id === 'removeAdditionalImage') {
                 e.preventDefault();
                 e.stopPropagation();
-                removeReferenceImage(e);
+                removeAdditionalImage(e);
                 return false;
             }
         });
@@ -1056,11 +1148,133 @@
             }
         };
         
+        // Reset form to start fresh
+        window.resetForm = function() {
+            // Clear file inputs
+            document.getElementById('model_file').value = '';
+            document.getElementById('flatlay_file').value = '';
+            
+            // Clear file name displays
+            document.getElementById('modelFileName').textContent = '';
+            document.getElementById('flatlayFileName').textContent = '';
+            
+            // Hide and clear preview images
+            const modelPreview = document.getElementById('modelPreview');
+            modelPreview.src = '';
+            modelPreview.style.display = 'none';
+            
+            const flatlayPreview = document.getElementById('flatlayPreview');
+            flatlayPreview.src = '';
+            flatlayPreview.style.display = 'none';
+            
+            // Clear additional image
+            removeAdditionalImage();
+            
+            // Clear refinements textarea and accumulated refinements
+            document.getElementById('refinements').value = '';
+            sessionStorage.removeItem('accumulatedRefinements');
+            updateAccumulatedRefinementsDisplay();
+            
+            // Reset output size to default
+            document.querySelector('input[name="output_size"][value="match_model"]').checked = true;
+            
+            // Hide result section
+            document.getElementById('resultSection').classList.remove('show');
+            document.getElementById('resultImage').src = '';
+            
+            // Hide prompt display
+            const promptDisplay = document.getElementById('promptDisplay');
+            if (promptDisplay) {
+                promptDisplay.style.display = 'none';
+            }
+            
+            // Clear messages
+            document.getElementById('message').innerHTML = '';
+            
+            // Reset form state
+            document.getElementById('generateButton').disabled = false;
+            
+            // Scroll to top of form
+            document.querySelector('.form-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+        
+        // Download result image
+        window.downloadResultImage = async function() {
+            const resultImage = document.getElementById('resultImage');
+            if (!resultImage || !resultImage.src) {
+                alert('No image available to download');
+                return;
+            }
+            
+            try {
+                // Get the image URL (remove cache-busting query parameter if present)
+                const imageUrl = resultImage.src.split('?')[0];
+                
+                // Fetch the image as a blob to avoid CORS issues
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
+                
+                // Create a blob URL and trigger download
+                const blobUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = 'bompard-garment-swap-' + new Date().getTime() + '.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Clean up the blob URL
+                window.URL.revokeObjectURL(blobUrl);
+            } catch (error) {
+                console.error('Error downloading image:', error);
+                alert('Failed to download image. Please try right-clicking on the image and selecting "Save image as..."');
+            }
+        };
+        
+        // Function to update accumulated refinements display
+        function updateAccumulatedRefinementsDisplay() {
+            const accumulatedRefinements = sessionStorage.getItem('accumulatedRefinements');
+            const container = document.getElementById('accumulatedRefinements');
+            const textDisplay = document.getElementById('accumulatedRefinementsText');
+            
+            if (accumulatedRefinements && accumulatedRefinements.trim()) {
+                container.style.display = 'block';
+                textDisplay.textContent = accumulatedRefinements;
+            } else {
+                container.style.display = 'none';
+            }
+        }
+        
+        // Load accumulated refinements on page load
+        updateAccumulatedRefinementsDisplay();
+        
         // Form submission
         document.getElementById('swapForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const formData = new FormData(this);
+            
+            // Get accumulated refinements from sessionStorage and combine with new ones
+            const accumulatedRefinements = sessionStorage.getItem('accumulatedRefinements') || '';
+            const newRefinements = document.getElementById('refinements').value.trim();
+            
+            let combinedRefinements = '';
+            if (accumulatedRefinements && newRefinements) {
+                combinedRefinements = accumulatedRefinements + '\n\n' + newRefinements;
+            } else if (accumulatedRefinements) {
+                combinedRefinements = accumulatedRefinements;
+            } else if (newRefinements) {
+                combinedRefinements = newRefinements;
+            }
+            
+            // Store combined refinements in a data attribute for use after success
+            formData.append('_combined_refinements', combinedRefinements);
+            
+            // Replace the refinements in formData with combined refinements
+            if (combinedRefinements) {
+                formData.set('refinements', combinedRefinements);
+            }
+            
             const generateButton = document.getElementById('generateButton');
             const loading = document.getElementById('loading');
             const message = document.getElementById('message');
@@ -1080,13 +1294,36 @@
                 
                 if (!response.ok) {
                     let errorMsg = 'Server error';
+                    let errorData = null;
                     try {
-                        const errorData = await response.json();
+                        errorData = await response.json();
                         errorMsg = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
                     } catch (e) {
                         errorMsg = `HTTP ${response.status}: ${response.statusText}`;
                     }
                     message.innerHTML = '<div class="message error">' + errorMsg + '</div>';
+                    
+                    // Display prompt even on error
+                    if (errorData && errorData.prompt_used) {
+                        const promptDisplay = document.getElementById('promptDisplay');
+                        const promptBox = document.getElementById('promptBox');
+                        if (promptDisplay && promptBox) {
+                            resultSection.classList.add('show');
+                            promptDisplay.style.display = 'block';
+                            promptBox.textContent = errorData.prompt_used;
+                            promptBox.classList.remove('show');
+                            promptVisible = false;
+                            
+                            let summary = promptBox.previousElementSibling;
+                            if (!summary || !summary.classList.contains('prompt-summary')) {
+                                summary = document.createElement('div');
+                                summary.className = 'prompt-summary';
+                                promptBox.parentNode.insertBefore(summary, promptBox);
+                            }
+                            summary.innerHTML = `Prompt length: ${errorData.full_prompt_length || 0} characters | Base: ${errorData.base_prompt_length || 0} chars`;
+                        }
+                    }
+                    
                     generateButton.disabled = false;
                     loading.classList.remove('show');
                     return;
@@ -1098,6 +1335,33 @@
                     message.innerHTML = '<div class="message success">' + data.message + '</div>';
                     document.getElementById('resultImage').src = data.image_url + '?t=' + new Date().getTime();
                     resultSection.classList.add('show');
+                    
+                    // Store combined refinements for next iteration
+                    // We stored the combined refinements in formData before sending
+                    // Now we store them in sessionStorage and clear the textarea
+                    const refinementsTextarea = document.getElementById('refinements');
+                    const newRefinements = refinementsTextarea.value.trim();
+                    
+                    if (newRefinements) {
+                        // Get previous accumulated refinements from sessionStorage
+                        let accumulatedRefinements = sessionStorage.getItem('accumulatedRefinements') || '';
+                        
+                        // Append new refinements to accumulated
+                        if (accumulatedRefinements) {
+                            accumulatedRefinements += '\n\n' + newRefinements;
+                        } else {
+                            accumulatedRefinements = newRefinements;
+                        }
+                        
+                        // Store accumulated refinements for next iteration
+                        sessionStorage.setItem('accumulatedRefinements', accumulatedRefinements);
+                        
+                        // Update UI to show accumulated refinements
+                        updateAccumulatedRefinementsDisplay();
+                        
+                        // Clear the textarea for next iteration (but keep accumulated in storage)
+                        refinementsTextarea.value = '';
+                    }
                     
                     // Display prompt if available
                     if (data.prompt_used) {
@@ -1120,6 +1384,27 @@
                     }
                 } else {
                     message.innerHTML = '<div class="message error">' + (data.error || 'An error occurred') + '</div>';
+                    
+                    // Display prompt even on error (for data.success === false case)
+                    if (data.prompt_used) {
+                        const promptDisplay = document.getElementById('promptDisplay');
+                        const promptBox = document.getElementById('promptBox');
+                        if (promptDisplay && promptBox) {
+                            resultSection.classList.add('show');
+                            promptDisplay.style.display = 'block';
+                            promptBox.textContent = data.prompt_used;
+                            promptBox.classList.remove('show');
+                            promptVisible = false;
+                            
+                            let summary = promptBox.previousElementSibling;
+                            if (!summary || !summary.classList.contains('prompt-summary')) {
+                                summary = document.createElement('div');
+                                summary.className = 'prompt-summary';
+                                promptBox.parentNode.insertBefore(summary, promptBox);
+                            }
+                            summary.innerHTML = `Prompt length: ${data.full_prompt_length || 0} characters | Base: ${data.base_prompt_length || 0} chars`;
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Fetch error:', error);
