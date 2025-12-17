@@ -92,6 +92,7 @@ def generate():
         
         model_file = request.files['model_file']
         flatlay_file = request.files['flatlay_file']
+        reference_file = request.files.get('reference_image')  # Optional reference image
         refinements = request.form.get('refinements', '').strip()
         output_size = request.form.get('output_size', 'original')  # Get output size preference
         
@@ -119,6 +120,17 @@ def generate():
         
         model_file.save(model_path)
         flatlay_file.save(flatlay_path)
+        
+        # Handle optional reference image
+        reference_path = None
+        if reference_file and reference_file.filename != '':
+            if not allowed_file(reference_file.filename):
+                return jsonify({'error': 'Invalid reference image file type. Allowed: PNG, JPG, JPEG, WEBP'}), 400
+            reference_filename = secure_filename(reference_file.filename)
+            reference_ext = reference_filename.rsplit('.', 1)[1].lower()
+            reference_path = Path(app.config['UPLOAD_FOLDER']) / f"{session_id}_reference.{reference_ext}"
+            reference_file.save(reference_path)
+            logger.info(f"Reference image saved: {reference_path}")
         
         # Get model image dimensions to use as default output size
         try:
@@ -157,6 +169,10 @@ def generate():
                 full_prompt += "\n"
                 full_prompt += clean_refinements.strip()
                 
+                # Add note about reference image if provided
+                if reference_path:
+                    full_prompt += "\n\nNOTE: A reference image is provided. Use it as additional guidance for the generation."
+                
                 logger.info("✓ Refinements added to prompt")
                 logger.debug(f"Full prompt with refinements:\n{full_prompt}")
             else:
@@ -165,6 +181,10 @@ def generate():
         else:
             full_prompt = base_prompt
             logger.info("No refinements provided, using base prompt only")
+        
+        # Add note about reference image if provided (even without refinements)
+        if reference_path and not refinements:
+            full_prompt += "\n\nNOTE: A reference image is provided. Use it as additional guidance for the generation."
         
         # Log prompt length
         logger.info(f"Final prompt length: {len(full_prompt)} characters")
@@ -208,6 +228,7 @@ def generate():
                 prompt=full_prompt,
                 output_path=output_path,
                 max_output_size=max_output_size,
+                reference_image_path=reference_path,  # Optional reference image
             )
         except Exception as e:
             logger.error(f"Error in garment swap: {e}", exc_info=True)

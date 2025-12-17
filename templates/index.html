@@ -379,6 +379,34 @@
             transform: scale(1.02);
         }
         
+        .close-preview-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(26, 26, 26, 0.85);
+            color: var(--bompard-white);
+            border: 2px solid var(--bompard-white);
+            font-size: 24px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 10;
+            padding: 0;
+            font-weight: 300;
+        }
+        
+        .close-preview-button:hover {
+            background: rgba(220, 53, 69, 0.9);
+            border-color: var(--bompard-white);
+            transform: scale(1.1);
+        }
+        
         .refinements-section {
             margin-bottom: 50px;
         }
@@ -829,6 +857,20 @@
                         name="refinements" 
                         placeholder="Add refinement instructions to improve the result...&#10;&#10;Examples:&#10;• Make the garment color match the flat-lay exactly&#10;• The sleeves must be pink, not grey&#10;• Keep the model's face identical to the original"></textarea>
                     <div class="hint">These instructions will be added to the prompt to refine the result. Leave empty for first generation.</div>
+                    
+                    <div style="margin-top: 30px;">
+                        <label for="reference_image" style="display: block; margin-bottom: 15px;">Reference Image (Optional)</label>
+                        <div class="file-input-wrapper" style="margin-bottom: 10px;">
+                            <input type="file" id="reference_image" name="reference_image" class="file-input" accept="image/*">
+                            <button type="button" class="file-button" onclick="document.getElementById('reference_image').click()">Choose Reference Image</button>
+                        </div>
+                        <div class="file-name" id="referenceImageFileName"></div>
+                        <div id="referenceImagePreviewContainer" style="display: none; position: relative; margin-top: 15px; max-width: 100%;">
+                            <img id="referenceImagePreview" class="file-preview" style="max-height: 200px; display: block;">
+                            <button type="button" id="removeReferenceImage" class="close-preview-button" onclick="removeReferenceImage(event)" title="Remove reference image">×</button>
+                        </div>
+                        <div class="hint" style="margin-top: 12px;">Upload a reference image to guide the generation. This image will be sent along with your refinement instructions.</div>
+                    </div>
                 </div>
                 
                 <div class="size-section">
@@ -896,6 +938,61 @@
         document.getElementById('flatlay_file').addEventListener('change', function(e) {
             handleFileSelect(e.target.files[0], 'flatlayFileName', 'flatlayPreview');
             setupDragAndDrop('flatlayBox', 'flatlay_file');
+        });
+        
+        // Function to remove reference image
+        function removeReferenceImage(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            // Clear file input
+            const fileInput = document.getElementById('reference_image');
+            if (fileInput) {
+                fileInput.value = '';
+            }
+            
+            // Clear filename display
+            const fileNameElement = document.getElementById('referenceImageFileName');
+            if (fileNameElement) {
+                fileNameElement.textContent = '';
+            }
+            
+            // Clear and hide preview image
+            const previewElement = document.getElementById('referenceImagePreview');
+            if (previewElement) {
+                previewElement.src = '';
+                previewElement.style.display = 'none';
+            }
+            
+            // Hide container
+            const containerElement = document.getElementById('referenceImagePreviewContainer');
+            if (containerElement) {
+                containerElement.style.display = 'none';
+            }
+        }
+        
+        // Make function globally accessible
+        window.removeReferenceImage = removeReferenceImage;
+        
+        document.getElementById('reference_image').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                handleFileSelect(e.target.files[0], 'referenceImageFileName', 'referenceImagePreview');
+                document.getElementById('referenceImagePreviewContainer').style.display = 'inline-block';
+            } else {
+                removeReferenceImage();
+            }
+        });
+        
+        // Use event delegation for the remove button (works even if button is dynamically shown/hidden)
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.id === 'removeReferenceImage') {
+                e.preventDefault();
+                e.stopPropagation();
+                removeReferenceImage(e);
+                return false;
+            }
         });
         
         function handleFileSelect(file, fileNameId, previewId) {

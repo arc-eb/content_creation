@@ -38,6 +38,7 @@ class GeminiGarmentSwapClient:
         prompt: str,
         output_path: Path,
         max_output_size: Optional[int] = None,
+        reference_image_path: Optional[Path] = None,
     ) -> Optional[Path]:
         """
         Perform a garment swap using Gemini API.
@@ -48,6 +49,7 @@ class GeminiGarmentSwapClient:
             prompt: The prompt describing the desired result
             output_path: Path where the output image should be saved
             max_output_size: Optional maximum dimension for output image (resizes if larger)
+            reference_image_path: Optional path to a reference image for guidance
             
         Returns:
             Path to the saved output image if successful, None otherwise
@@ -61,14 +63,21 @@ class GeminiGarmentSwapClient:
             logger.error(f"Flat-lay image not found: {flatlay_image_path}")
             raise FileNotFoundError(f"Flat-lay image not found: {flatlay_image_path}")
         
-        logger.info(f"Processing garment swap: {model_image_path.name} + {flatlay_image_path.name}")
+        if reference_image_path and not reference_image_path.exists():
+            logger.error(f"Reference image not found: {reference_image_path}")
+            raise FileNotFoundError(f"Reference image not found: {reference_image_path}")
+        
+        log_msg = f"Processing garment swap: {model_image_path.name} + {flatlay_image_path.name}"
+        if reference_image_path:
+            log_msg += f" + reference: {reference_image_path.name}"
+        logger.info(log_msg)
         
         # Retry logic
         last_exception = None
         for attempt in range(1, self.config.max_retries + 1):
             try:
                 result = self._perform_swap(
-                    model_image_path, flatlay_image_path, prompt, output_path, max_output_size
+                    model_image_path, flatlay_image_path, prompt, output_path, max_output_size, reference_image_path
                 )
                 if result:
                     logger.info(f"✅ Successfully saved image to: {output_path}")
@@ -99,12 +108,20 @@ class GeminiGarmentSwapClient:
         prompt: str,
         output_path: Path,
         max_output_size: Optional[int] = None,
+        reference_image_path: Optional[Path] = None,
     ) -> Optional[Path]:
         """Internal method to perform the actual API call."""
         # Load images
         try:
             model_image = Image.open(model_image_path)
             flatlay_image = Image.open(flatlay_image_path)
+            reference_image = None
+            if reference_image_path:
+                reference_image = Image.open(reference_image_path)
+                logger.info(
+                    f"Reference image: {reference_image.size}, mode: {reference_image.mode}, "
+                    f"format: {reference_image.format}"
+                )
         except Exception as e:
             logger.error(f"Error loading images: {e}")
             raise
@@ -120,12 +137,19 @@ class GeminiGarmentSwapClient:
         )
         
         # Check image sizes and potentially resize if too large
-        max_dimension = 2048
+        # Use smaller max dimension when reference image is present (3 images total)
+        max_dimension = 1536 if reference_image else 2048
+        
         model_max = max(model_image.size)
         flatlay_max = max(flatlay_image.size)
+        reference_max = max(reference_image.size) if reference_image else 0
         
-        if model_max > max_dimension or flatlay_max > max_dimension:
-            logger.warning(f"One or both images are large (model: {model_max}px, flatlay: {flatlay_max}px). Resizing to {max_dimension}px to avoid API issues.")
+        # Always resize if any image exceeds max_dimension
+        if model_max > max_dimension or flatlay_max > max_dimension or reference_max > max_dimension:
+            logger.warning(
+                f"One or more images are large (model: {model_max}px, flatlay: {flatlay_max}px, "
+                f"reference: {reference_max}px). Resizing to {max_dimension}px to avoid API issues."
+            )
             
             # Resize images if too large (maintain aspect ratio)
             if model_max > max_dimension:
@@ -139,6 +163,23 @@ class GeminiGarmentSwapClient:
                 new_size = (int(flatlay_image.size[0] * ratio), int(flatlay_image.size[1] * ratio))
                 flatlay_image = flatlay_image.resize(new_size, Image.Resampling.LANCZOS)
                 logger.info(f"Resized flat-lay image to: {flatlay_image.size}")
+            
+            if reference_image and reference_max > max_dimension:
+                ratio = max_dimension / reference_max
+                new_size = (int(reference_image.size[0] * ratio), int(reference_image.size[1] * ratio))
+                reference_image = reference_image.resize(new_size, Image.Resampling.LANCZOS)
+                logger.info(f"Resized reference image to: {reference_image.size}")
+        
+        # Convert images to RGB to ensure compatibility (some formats may cause issues)
+        if model_image.mode != 'RGB':
+            logger.info(f"Converting model image from {model_image.mode} to RGB")
+            model_image = model_image.convert('RGB')
+        if flatlay_image.mode != 'RGB':
+            logger.info(f"Converting flat-lay image from {flatlay_image.mode} to RGB")
+            flatlay_image = flatlay_image.convert('RGB')
+        if reference_image and reference_image.mode != 'RGB':
+            logger.info(f"Converting reference image from {reference_image.mode} to RGB")
+            reference_image = reference_image.convert('RGB')
         
         # Prepare content for API
         contents = [
@@ -146,6 +187,17 @@ class GeminiGarmentSwapClient:
             model_image,
             flatlay_image,
         ]
+        if reference_image:
+            contents.append(reference_image)
+            logger.info("Reference image included in API call (3 images total)")
+        else:
+            logger.info("No reference image (2 images total)")
+        
+        # Log request details for debugging
+        logger.info(f"Request details: {len(contents)} items (1 prompt + {len(contents)-1} images)")
+        logger.info(f"Prompt length: {len(prompt)} characters")
+        total_pixels = sum(img.size[0] * img.size[1] for img in contents[1:])
+        logger.info(f"Total image pixels: {total_pixels:,}")
         
         # Make API call
         logger.info("Calling Gemini API...")
