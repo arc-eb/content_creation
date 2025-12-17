@@ -34,7 +34,7 @@ class PromptGenerator:
         
         # Ultra-explicit prompt for garment swap
         # Structure: Task definition, then what stays the same, then what changes
-        base_instruction = """TASK: You have two images - (1) a photo of a model, (2) a flat-lay photo of a garment.
+        base_instruction = """TASK: You have images - (1) a photo of a model, (2) a flat-lay photo of a garment.
 Replace ONLY the clothing on the model with the garment from the flat-lay image.
 Everything else in the image must remain identical."""
         

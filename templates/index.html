@@ -1267,8 +1267,8 @@
                 combinedRefinements = newRefinements;
             }
             
-            // Store combined refinements in a data attribute for use after success
-            formData.append('_combined_refinements', combinedRefinements);
+            // Store combined refinements to use after success (in closure)
+            const refinementsToStore = combinedRefinements;
             
             // Replace the refinements in formData with combined refinements
             if (combinedRefinements) {
@@ -1337,30 +1337,16 @@
                     resultSection.classList.add('show');
                     
                     // Store combined refinements for next iteration
-                    // We stored the combined refinements in formData before sending
-                    // Now we store them in sessionStorage and clear the textarea
-                    const refinementsTextarea = document.getElementById('refinements');
-                    const newRefinements = refinementsTextarea.value.trim();
-                    
-                    if (newRefinements) {
-                        // Get previous accumulated refinements from sessionStorage
-                        let accumulatedRefinements = sessionStorage.getItem('accumulatedRefinements') || '';
-                        
-                        // Append new refinements to accumulated
-                        if (accumulatedRefinements) {
-                            accumulatedRefinements += '\n\n' + newRefinements;
-                        } else {
-                            accumulatedRefinements = newRefinements;
-                        }
-                        
-                        // Store accumulated refinements for next iteration
-                        sessionStorage.setItem('accumulatedRefinements', accumulatedRefinements);
+                    // Use the combined refinements that were actually sent (stored in closure)
+                    if (refinementsToStore) {
+                        // Store the combined refinements (which includes both accumulated + new) for next iteration
+                        sessionStorage.setItem('accumulatedRefinements', refinementsToStore);
                         
                         // Update UI to show accumulated refinements
                         updateAccumulatedRefinementsDisplay();
                         
                         // Clear the textarea for next iteration (but keep accumulated in storage)
-                        refinementsTextarea.value = '';
+                        document.getElementById('refinements').value = '';
                     }
                     
                     // Display prompt if available
