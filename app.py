@@ -69,7 +69,12 @@ with app.app_context():
         db.create_all()
         logger.info("Database tables created successfully")
     except Exception as e:
-        logger.error(f"Error creating database tables: {e}")
+        # Handle "table already exists" errors gracefully (common on redeployment)
+        error_msg = str(e).lower()
+        if 'already exists' in error_msg or 'duplicate key' in error_msg or 'uniqueviolation' in error_msg:
+            logger.info("Database tables already exist (this is normal on redeployment)")
+        else:
+            logger.error(f"Error creating database tables: {e}")
 
 # Ensure directories exist
 Path(app.config['UPLOAD_FOLDER']).mkdir(exist_ok=True)
