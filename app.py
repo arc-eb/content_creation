@@ -324,6 +324,100 @@ def generate():
         return jsonify(error_response), 500
 
 
+@app.route('/generate-ai-model', methods=['POST'])
+def generate_ai_model():
+    """Generate an AI model inspired by the uploaded model image."""
+    try:
+        logger.info("Received AI model generation request")
+        
+        # Validate reference image
+        if 'reference_model' not in request.files:
+            return jsonify({'error': 'Reference model image required'}), 400
+        
+        reference_file = request.files['reference_model']
+        
+        if reference_file.filename == '':
+            return jsonify({'error': 'Please select a reference image'}), 400
+        
+        if not allowed_file(reference_file.filename):
+            return jsonify({'error': 'Invalid file type. Allowed: PNG, JPG, JPEG, WEBP'}), 400
+        
+        # Generate unique session ID
+        session_id = str(uuid.uuid4())[:8]
+        
+        # Save reference image temporarily
+        ref_filename = secure_filename(reference_file.filename)
+        ref_ext = ref_filename.rsplit('.', 1)[1].lower()
+        ref_path = Path(app.config['UPLOAD_FOLDER']) / f"{session_id}_reference.{ref_ext}"
+        reference_file.save(ref_path)
+        
+        logger.info(f"Reference image saved: {ref_path}")
+        
+        # Get custom instructions if provided
+        custom_instructions = request.form.get('custom_instructions', '').strip()
+        if custom_instructions:
+            logger.info(f"Custom instructions provided: {repr(custom_instructions[:100])}")
+        
+        # Generate AI model prompt
+        prompt_gen = PromptGenerator()
+        ai_model_prompt = prompt_gen.generate_ai_model_prompt(custom_instructions=custom_instructions if custom_instructions else None)
+        
+        logger.info(f"AI model prompt length: {len(ai_model_prompt)} characters")
+        
+        # Output path for AI model
+        ai_model_filename = f"{session_id}_ai_model.png"
+        ai_model_path = Path(app.config['OUTPUT_FOLDER']) / ai_model_filename
+        
+        # Initialize and call Gemini API
+        config = Config.from_env()
+        config.ensure_directories()
+        client = GeminiGarmentSwapClient(config)
+        
+        print(f"Generating AI model from: {ref_path}")
+        print(f"Output: {ai_model_path}")
+        
+        try:
+            result_path = client.generate_ai_model(
+                reference_image_path=ref_path,
+                prompt=ai_model_prompt,
+                output_path=ai_model_path
+            )
+        except Exception as e:
+            logger.error(f"Error in AI model generation: {e}", exc_info=True)
+            error_msg = str(e)
+            
+            # Provide user-friendly error messages
+            if 'PROHIBITED_CONTENT' in error_msg:
+                error_msg = (
+                    "Content Policy Error: The API blocked this generation.\n\n"
+                    "The reference image may contain content that violates safety policies. "
+                    "Try using a different reference image."
+                )
+            elif 'SAFETY' in error_msg:
+                error_msg = (
+                    "Safety Filter Error: Generation was blocked by safety filters.\n\n"
+                    "Try using a different reference image."
+                )
+            
+            return jsonify({'error': error_msg}), 500
+        
+        if result_path and result_path.exists():
+            return jsonify({
+                'success': True,
+                'ai_model_url': url_for('get_image', filename=ai_model_filename),
+                'session_id': session_id,
+                'message': 'AI model generated successfully'
+            })
+        else:
+            return jsonify({'error': 'Failed to generate AI model. Please check the logs.'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error in generate-ai-model endpoint: {e}", exc_info=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error generating AI model: {str(e)}'}), 500
+
+
 @app.route('/image/<filename>')
 def get_image(filename):
     """Serve generated images."""
@@ -356,7 +450,7 @@ if __name__ == '__main__':
     print(f"Template auto-reload: {debug}")
     print(f"Open your browser and go to: http://127.0.0.1:{port}")
     print("\nPress Ctrl+C to stop the server")
-    print("💡 Tip: If you don't see changes, do a hard refresh (Ctrl+F5 or Cmd+Shift+R)")
+    print("Tip: If you don't see changes, do a hard refresh (Ctrl+F5 or Cmd+Shift+R)")
     print("="*70)
     print()
     

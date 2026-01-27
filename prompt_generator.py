@@ -126,4 +126,36 @@ CRITICAL: The garment from the flat-lay must NOT be modified in any way when tra
             preserve_lighting=True,
             preserve_background=True,
         )
+    
+    @staticmethod
+    def generate_ai_model_prompt(custom_instructions: Optional[str] = None) -> str:
+        """
+        Generate prompt for modifying the model's face and pose while keeping style.
+        
+        Args:
+            custom_instructions: Optional custom instructions for model characteristics
+        
+        Returns:
+            Prompt string for face and pose modification
+        """
+        base_prompt = """TASK: Modify this fashion model photograph by changing the face and adjusting the pose slightly.
+
+REQUIREMENTS:
+- CHANGE: Replace the face with a completely different face (photorealistic, professional)
+- CHANGE: Adjust the pose slightly - rotate the body or head by 5-15 degrees, or shift the arm/hand position subtly
+- KEEP: Same body type and proportions
+- KEEP: Same lighting style and background style
+- KEEP: Same clothing and overall aesthetic
+- KEEP: Professional fashion photography quality
+
+The result should look like a different person in a similar (but not identical) pose, maintaining the same professional fashion photography style."""
+        
+        # Add custom instructions if provided
+        if custom_instructions:
+            base_prompt += "\n\nADDITIONAL CUSTOM INSTRUCTIONS:\n"
+            base_prompt += custom_instructions.strip()
+        
+        base_prompt += "\n\nOutput: Modified fashion model photo with different face and slightly adjusted pose."
+        
+        return base_prompt
 

@@ -347,4 +347,125 @@ class GeminiGarmentSwapClient:
             
         except Exception as e:
             return False, f"Error validating image: {e}"
+    
+    def generate_ai_model(
+        self,
+        reference_image_path: Path,
+        prompt: str,
+        output_path: Path,
+    ) -> Optional[Path]:
+        """
+        Generate an AI model inspired by reference image with different face.
+        
+        Args:
+            reference_image_path: Path to the reference model image
+            prompt: The prompt describing the desired AI model
+            output_path: Path where the output image should be saved
+            
+        Returns:
+            Path to the saved output image if successful, None otherwise
+        """
+        # Validate input file exists
+        if not reference_image_path.exists():
+            logger.error(f"Reference image not found: {reference_image_path}")
+            raise FileNotFoundError(f"Reference image not found: {reference_image_path}")
+        
+        logger.info(f"Generating AI model from reference: {reference_image_path.name}")
+        
+        try:
+            reference_image = Image.open(reference_image_path)
+            
+            # Log image info
+            logger.info(
+                f"Reference image: {reference_image.size}, mode: {reference_image.mode}, "
+                f"format: {reference_image.format}"
+            )
+            
+            # Resize if needed
+            max_dimension = 2048
+            ref_max = max(reference_image.size)
+            
+            if ref_max > max_dimension:
+                logger.warning(
+                    f"Reference image is large ({ref_max}px). Resizing to {max_dimension}px to avoid API issues."
+                )
+                ratio = max_dimension / ref_max
+                new_size = (int(reference_image.size[0] * ratio), int(reference_image.size[1] * ratio))
+                reference_image = reference_image.resize(new_size, Image.Resampling.LANCZOS)
+                logger.info(f"Resized reference image to: {reference_image.size}")
+            
+            # Convert to RGB
+            if reference_image.mode != 'RGB':
+                logger.info(f"Converting reference image from {reference_image.mode} to RGB")
+                reference_image = reference_image.convert('RGB')
+            
+            # Prepare content for API
+            contents = [prompt, reference_image]
+            
+            # Log request details
+            logger.info(f"Request details: {len(contents)} items (1 prompt + 1 image)")
+            logger.info(f"Prompt length: {len(prompt)} characters")
+            
+            # Make API call
+            logger.info("Calling Gemini API to generate AI model...")
+            response = self.client.models.generate_content(
+                model=self.config.model_name,
+                contents=contents,
+            )
+            
+            # Extract and save image (similar to swap_garment logic)
+            if not response.candidates:
+                logger.error("API returned no candidates")
+                return None
+            
+            candidate = response.candidates[0]
+            if not candidate or not hasattr(candidate, 'content'):
+                logger.error("API candidate has no content")
+                return None
+            
+            content = candidate.content
+            
+            if content is None:
+                logger.error("API candidate.content is None")
+                if hasattr(candidate, 'finish_reason'):
+                    finish_reason = candidate.finish_reason
+                    logger.error(f"Finish reason: {finish_reason}")
+                return None
+            
+            if not hasattr(content, 'parts'):
+                logger.error("API content has no 'parts' attribute")
+                return None
+            
+            for part in content.parts:
+                if part.inline_data:
+                    image_bytes = part.inline_data.data
+                    generated_image = Image.open(BytesIO(image_bytes))
+                    
+                    # Ensure output directory exists
+                    output_path.parent.mkdir(parents=True, exist_ok=True)
+                    
+                    # Save with appropriate format
+                    save_kwargs = {}
+                    if self.config.output_format.lower() in ("jpg", "jpeg"):
+                        # Convert to RGB if necessary for JPEG
+                        if generated_image.mode in ("RGBA", "LA", "P"):
+                            background = Image.new("RGB", generated_image.size, (255, 255, 255))
+                            if generated_image.mode == "P":
+                                generated_image = generated_image.convert("RGBA")
+                            background.paste(generated_image, mask=generated_image.split()[-1] if generated_image.mode in ("RGBA", "LA") else None)
+                            generated_image = background
+                        save_kwargs["quality"] = self.config.output_quality
+                        save_kwargs["optimize"] = True
+                    
+                    generated_image.save(output_path, format=self.config.output_format.upper(), **save_kwargs)
+                    logger.info(f"✅ AI model saved to: {output_path} ({generated_image.size}, {generated_image.mode})")
+                    return output_path
+            
+            # If we get here, no image was found in the response
+            logger.error("API response did not contain image data")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error generating AI model: {e}", exc_info=True)
+            raise
 

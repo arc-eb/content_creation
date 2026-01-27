@@ -449,6 +449,142 @@
             font-weight: 300;
         }
         
+        .ai-model-section {
+            margin-bottom: 40px;
+            padding: 30px;
+            background: linear-gradient(135deg, var(--bompard-beige) 0%, var(--bompard-cream) 100%);
+            border-radius: 16px;
+            border: 2px solid var(--bompard-light-gray);
+        }
+        
+        .ai-model-checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        
+        .ai-model-checkbox-container input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--bompard-black);
+        }
+        
+        .generate-ai-model-button {
+            background: var(--bompard-gold);
+            color: var(--bompard-black);
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.95rem;
+        }
+        
+        .generate-ai-model-button:hover:not(:disabled) {
+            background: var(--bompard-black);
+            color: var(--bompard-white);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .generate-ai-model-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .ai-model-preview-section {
+            margin-top: 30px;
+            padding: 30px;
+            background: var(--bompard-white);
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: var(--shadow-soft);
+        }
+        
+        .ai-model-preview-section h4 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--bompard-black);
+            margin-bottom: 20px;
+        }
+        
+        .ai-model-preview-image {
+            max-width: 400px;
+            max-height: 600px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-medium);
+            margin: 20px auto;
+            display: block;
+            border: 2px solid var(--bompard-light-gray);
+        }
+        
+        .ai-model-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .ai-model-accept-btn,
+        .ai-model-regenerate-btn,
+        .ai-model-cancel-btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        
+        .ai-model-accept-btn {
+            background: #28a745;
+            color: var(--bompard-white);
+        }
+        
+        .ai-model-accept-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .ai-model-regenerate-btn {
+            background: var(--bompard-gold);
+            color: var(--bompard-black);
+        }
+        
+        .ai-model-regenerate-btn:hover {
+            background: var(--bompard-black);
+            color: var(--bompard-white);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .ai-model-cancel-btn {
+            background: var(--bompard-light-gray);
+            color: var(--bompard-black);
+        }
+        
+        .ai-model-cancel-btn:hover {
+            background: var(--bompard-gray);
+            color: var(--bompard-white);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+        
         .size-section {
             margin-bottom: 50px;
             padding: 40px;
@@ -926,6 +1062,48 @@
                     </div>
                 </div>
                 
+                <!-- AI Model Option -->
+                <div class="ai-model-section">
+                    <label class="ai-model-checkbox-container">
+                        <input type="checkbox" id="useAiModel" name="use_ai_model">
+                        <span>Use AI-Generated Model (different face and pose)</span>
+                    </label>
+                    <div class="hint">Generate a synthetic model inspired by your uploaded image</div>
+                    
+                    <div id="aiModelControls" style="display: none; margin-top: 20px;">
+                        <div style="margin-bottom: 20px;">
+                            <label for="aiModelInstructions" style="display: block; margin-bottom: 10px; font-weight: 500; font-size: 1rem;">Custom Instructions (Optional)</label>
+                            <textarea 
+                                id="aiModelInstructions" 
+                                name="ai_model_instructions" 
+                                placeholder="Add specific characteristics for the AI model...&#10;&#10;Examples:&#10;• Make the model have blonde hair&#10;• Add glasses&#10;• Make the pose more dynamic&#10;• Model should have a warmer skin tone"
+                                style="width: 100%; min-height: 120px; padding: 16px; border: 2px solid var(--bompard-light-gray); border-radius: 12px; font-size: 0.9rem; font-family: 'Inter', sans-serif; resize: vertical;"></textarea>
+                            <div class="hint" style="margin-top: 8px;">Specify additional characteristics or modifications for the AI model</div>
+                        </div>
+                        
+                        <button type="button" class="generate-ai-model-button" id="generateAiModelBtn">
+                            Generate AI Model
+                        </button>
+                    </div>
+                    
+                    <!-- AI Model Preview Section -->
+                    <div id="aiModelPreview" class="ai-model-preview-section" style="display: none;">
+                        <h4>Generated AI Model</h4>
+                        <img id="aiModelPreviewImage" class="ai-model-preview-image" alt="Generated AI Model">
+                        <div class="ai-model-actions">
+                            <button type="button" class="ai-model-accept-btn" id="acceptAiModelBtn">
+                                ✓ Use This Model
+                            </button>
+                            <button type="button" class="ai-model-regenerate-btn" id="regenerateAiModelBtn">
+                                ↻ Generate Different Model
+                            </button>
+                            <button type="button" class="ai-model-cancel-btn" id="cancelAiModelBtn">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="refinements-section">
                     <label for="refinements">Refinement Instructions (Optional)</label>
                     <div id="accumulatedRefinements" style="display: none; margin-bottom: 15px; padding: 15px; background: var(--bompard-beige); border-radius: 12px; border: 1px solid var(--bompard-light-gray);">
@@ -1248,11 +1426,193 @@
         // Load accumulated refinements on page load
         updateAccumulatedRefinementsDisplay();
         
+        // AI Model State
+        let aiModelState = {
+            enabled: false,
+            generated: false,
+            accepted: false,
+            currentAiModelUrl: null,
+            sessionId: null
+        };
+        
+        // Checkbox handler
+        document.getElementById('useAiModel').addEventListener('change', function(e) {
+            aiModelState.enabled = e.target.checked;
+            const controls = document.getElementById('aiModelControls');
+            controls.style.display = e.target.checked ? 'block' : 'none';
+            
+            if (!e.target.checked) {
+                // Reset AI model state
+                resetAiModelState();
+            }
+        });
+        
+        // Generate AI Model button
+        document.getElementById('generateAiModelBtn').addEventListener('click', async function() {
+            const modelFile = document.getElementById('model_file').files[0];
+            if (!modelFile) {
+                alert('Please upload a model image first');
+                return;
+            }
+            
+            const button = this;
+            button.disabled = true;
+            button.textContent = 'Generating AI Model...';
+            
+            // Show loading indicator
+            const loading = document.getElementById('loading');
+            const loadingText = loading.querySelector('p');
+            const originalLoadingText = loadingText.textContent;
+            loadingText.textContent = 'Generating AI model... This may take 30-60 seconds';
+            loading.classList.add('show');
+            
+            try {
+                const formData = new FormData();
+                formData.append('reference_model', modelFile);
+                
+                // Add custom instructions if provided
+                const customInstructions = document.getElementById('aiModelInstructions').value.trim();
+                if (customInstructions) {
+                    formData.append('custom_instructions', customInstructions);
+                }
+                
+                const response = await fetch('/generate-ai-model', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    aiModelState.generated = true;
+                    aiModelState.currentAiModelUrl = data.ai_model_url;
+                    aiModelState.sessionId = data.session_id;
+                    
+                    // Show preview
+                    document.getElementById('aiModelPreviewImage').src = data.ai_model_url + '?t=' + new Date().getTime();
+                    document.getElementById('aiModelPreview').style.display = 'block';
+                    
+                    // Scroll to preview
+                    document.getElementById('aiModelPreview').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    alert('Failed to generate AI model: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error generating AI model:', error);
+                alert('Error: ' + error.message);
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Generate AI Model';
+                loading.classList.remove('show');
+                loadingText.textContent = originalLoadingText;
+            }
+        });
+        
+        // Accept AI Model
+        document.getElementById('acceptAiModelBtn').addEventListener('click', function() {
+            aiModelState.accepted = true;
+            
+            // Visual feedback
+            const previewSection = document.getElementById('aiModelPreview');
+            const acceptBtn = this;
+            
+            // Disable buttons and show acceptance
+            acceptBtn.style.background = '#218838';
+            acceptBtn.textContent = '✓ Model Accepted';
+            acceptBtn.disabled = true;
+            
+            // Optionally disable other buttons
+            document.getElementById('regenerateAiModelBtn').disabled = true;
+            document.getElementById('cancelAiModelBtn').disabled = true;
+            
+            // Show success message
+            const message = document.getElementById('message');
+            message.innerHTML = '<div class="message success">AI model accepted! You can now generate the garment swap with this model.</div>';
+            
+            // Scroll to generate button
+            setTimeout(() => {
+                document.getElementById('generateButton').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 500);
+        });
+        
+        // Regenerate
+        document.getElementById('regenerateAiModelBtn').addEventListener('click', function() {
+            // Reset acceptance state
+            aiModelState.accepted = false;
+            
+            // Re-enable accept button
+            const acceptBtn = document.getElementById('acceptAiModelBtn');
+            acceptBtn.style.background = '#28a745';
+            acceptBtn.textContent = '✓ Use This Model';
+            acceptBtn.disabled = false;
+            
+            // Re-enable other buttons
+            document.getElementById('regenerateAiModelBtn').disabled = false;
+            document.getElementById('cancelAiModelBtn').disabled = false;
+            
+            // Clear message
+            document.getElementById('message').innerHTML = '';
+            
+            // Trigger generation
+            document.getElementById('generateAiModelBtn').click();
+        });
+        
+        // Cancel
+        document.getElementById('cancelAiModelBtn').addEventListener('click', function() {
+            resetAiModelState();
+            document.getElementById('useAiModel').checked = false;
+            document.getElementById('aiModelControls').style.display = 'none';
+            
+            // Clear message
+            document.getElementById('message').innerHTML = '';
+        });
+        
+        function resetAiModelState() {
+            aiModelState.generated = false;
+            aiModelState.accepted = false;
+            aiModelState.currentAiModelUrl = null;
+            document.getElementById('aiModelPreview').style.display = 'none';
+            
+            // Reset buttons
+            const acceptBtn = document.getElementById('acceptAiModelBtn');
+            acceptBtn.style.background = '#28a745';
+            acceptBtn.textContent = '✓ Use This Model';
+            acceptBtn.disabled = false;
+            
+            document.getElementById('regenerateAiModelBtn').disabled = false;
+            document.getElementById('cancelAiModelBtn').disabled = false;
+        }
+        
         // Form submission
         document.getElementById('swapForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            // Check if AI model is enabled but not accepted
+            if (aiModelState.enabled && aiModelState.generated && !aiModelState.accepted) {
+                alert('Please accept the AI model first, or uncheck the "Use AI-Generated Model" option to proceed with the original model.');
+                return;
+            }
+            
             const formData = new FormData(this);
+            
+            // If AI model is accepted, replace the model file with the AI model
+            if (aiModelState.enabled && aiModelState.accepted && aiModelState.currentAiModelUrl) {
+                try {
+                    // Fetch the AI model image
+                    const aiModelResponse = await fetch(aiModelState.currentAiModelUrl);
+                    const aiModelBlob = await aiModelResponse.blob();
+                    const aiModelFile = new File([aiModelBlob], 'ai_model.png', { type: 'image/png' });
+                    
+                    // Replace the model file in formData
+                    formData.set('model_file', aiModelFile);
+                    
+                    console.log('Using AI-generated model for garment swap');
+                } catch (error) {
+                    console.error('Error fetching AI model:', error);
+                    alert('Failed to use AI model. Please try again.');
+                    return;
+                }
+            }
             
             // Get accumulated refinements from sessionStorage and combine with new ones
             const accumulatedRefinements = sessionStorage.getItem('accumulatedRefinements') || '';
