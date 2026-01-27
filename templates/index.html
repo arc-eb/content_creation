@@ -585,6 +585,60 @@
             box-shadow: var(--shadow-medium);
         }
         
+        .ai-progress-label {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--bompard-black);
+            margin-bottom: 12px;
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .ai-progress-bar-container {
+            width: 100%;
+            height: 28px;
+            background: var(--bompard-light-gray);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: 2px solid var(--bompard-light-gray);
+        }
+        
+        .ai-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--bompard-gold) 0%, var(--bompard-black) 100%);
+            border-radius: 12px;
+            transition: width 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ai-progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .ai-progress-text {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--bompard-gray);
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+        }
+        
         .size-section {
             margin-bottom: 50px;
             padding: 40px;
@@ -784,6 +838,38 @@
         
         .download-button:active {
             transform: translateY(0);
+        }
+        
+        .save-image-btn {
+            background: #10b981;
+            color: white;
+            padding: 16px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow-medium);
+            margin-left: 15px;
+        }
+        
+        .save-image-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-strong);
+        }
+        
+        .save-image-btn:active {
+            transform: translateY(0);
+        }
+        
+        .save-image-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
         
         .message {
@@ -1084,6 +1170,15 @@
                         <button type="button" class="generate-ai-model-button" id="generateAiModelBtn">
                             Generate AI Model
                         </button>
+                        
+                        <!-- Progress Bar for AI Model Generation -->
+                        <div id="aiModelProgressContainer" style="display: none; margin-top: 25px;">
+                            <div class="ai-progress-label">Generating AI Model...</div>
+                            <div class="ai-progress-bar-container">
+                                <div class="ai-progress-bar" id="aiModelProgressBar"></div>
+                            </div>
+                            <div class="ai-progress-text" id="aiModelProgressText">0%</div>
+                        </div>
                     </div>
                     
                     <!-- AI Model Preview Section -->
@@ -1193,6 +1288,9 @@
                 <button type="button" id="downloadButton" class="download-button" onclick="downloadResultImage()">
                     <span>↓</span>
                     <span>Download Image</span>
+                </button>
+                <button type="button" id="saveImageBtn" class="save-image-btn" style="display:none;" onclick="saveImageToDatabase()">
+                    💾 Save Image to Database
                 </button>
             </div>
         </div>
@@ -1359,6 +1457,7 @@
             // Hide result section
             document.getElementById('resultSection').classList.remove('show');
             document.getElementById('resultImage').src = '';
+            document.getElementById('saveImageBtn').style.display = 'none';
             
             // Hide prompt display
             const promptDisplay = document.getElementById('promptDisplay');
@@ -1409,6 +1508,70 @@
             }
         };
         
+        // Save image to database
+        window.saveImageToDatabase = async function() {
+            const resultImage = document.getElementById('resultImage');
+            const message = document.getElementById('message');
+            
+            if (!resultImage || !resultImage.src) {
+                message.innerHTML = '<div class="message error">No image available to save</div>';
+                message.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            
+            try {
+                // Get the image URL (remove cache-busting query parameter if present)
+                const imageUrl = resultImage.src.split('?')[0];
+                
+                // Extract just the path (e.g., /image/abc123_result.png)
+                const url = new URL(imageUrl);
+                const imagePath = url.pathname;
+                
+                // Show loading state
+                const saveBtn = document.getElementById('saveImageBtn');
+                const originalText = saveBtn.innerHTML;
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '💾 Saving...';
+                
+                // Send to backend
+                const response = await fetch('/save-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        image_url: imagePath
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    message.innerHTML = '<div class="message success">✅ ' + data.message + ' (ID: ' + data.image_id + ')</div>';
+                    message.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Keep button visible but change text temporarily
+                    saveBtn.innerHTML = '✓ Saved!';
+                    setTimeout(() => {
+                        saveBtn.innerHTML = originalText;
+                        saveBtn.disabled = false;
+                    }, 2000);
+                } else {
+                    message.innerHTML = '<div class="message error">Failed to save image: ' + (data.error || 'Unknown error') + '</div>';
+                    message.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    saveBtn.innerHTML = originalText;
+                    saveBtn.disabled = false;
+                }
+                
+            } catch (error) {
+                console.error('Error saving image:', error);
+                message.innerHTML = '<div class="message error">Failed to save image to database: ' + error.message + '</div>';
+                message.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const saveBtn = document.getElementById('saveImageBtn');
+                saveBtn.innerHTML = '💾 Save Image to Database';
+                saveBtn.disabled = false;
+            }
+        };
+        
         // Function to update accumulated refinements display
         function updateAccumulatedRefinementsDisplay() {
             const accumulatedRefinements = sessionStorage.getItem('accumulatedRefinements');
@@ -1435,6 +1598,78 @@
             sessionId: null
         };
         
+        // Progress bar animation
+        let progressInterval = null;
+        
+        function startProgressBar() {
+            const progressContainer = document.getElementById('aiModelProgressContainer');
+            const progressBar = document.getElementById('aiModelProgressBar');
+            const progressText = document.getElementById('aiModelProgressText');
+            
+            progressContainer.style.display = 'block';
+            let progress = 0;
+            
+            // Clear any existing interval
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
+            
+            // Simulate progress (starts fast, slows down towards the end)
+            progressInterval = setInterval(() => {
+                if (progress < 20) {
+                    progress += 2; // Fast start
+                } else if (progress < 60) {
+                    progress += 1; // Medium speed
+                } else if (progress < 90) {
+                    progress += 0.5; // Slow down
+                } else if (progress < 95) {
+                    progress += 0.2; // Very slow near end
+                }
+                
+                progressBar.style.width = progress + '%';
+                progressText.textContent = Math.round(progress) + '%';
+            }, 500); // Update every 500ms
+        }
+        
+        function completeProgressBar() {
+            const progressBar = document.getElementById('aiModelProgressBar');
+            const progressText = document.getElementById('aiModelProgressText');
+            
+            // Clear interval
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            
+            // Complete to 100%
+            progressBar.style.width = '100%';
+            progressText.textContent = '100%';
+            
+            // Hide after a short delay
+            setTimeout(() => {
+                const progressContainer = document.getElementById('aiModelProgressContainer');
+                progressContainer.style.display = 'none';
+                // Reset for next time
+                progressBar.style.width = '0%';
+                progressText.textContent = '0%';
+            }, 1000);
+        }
+        
+        function hideProgressBar() {
+            const progressContainer = document.getElementById('aiModelProgressContainer');
+            const progressBar = document.getElementById('aiModelProgressBar');
+            const progressText = document.getElementById('aiModelProgressText');
+            
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            
+            progressContainer.style.display = 'none';
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+        }
+        
         // Checkbox handler
         document.getElementById('useAiModel').addEventListener('change', function(e) {
             aiModelState.enabled = e.target.checked;
@@ -1458,6 +1693,9 @@
             const button = this;
             button.disabled = true;
             button.textContent = 'Generating AI Model...';
+            
+            // Show progress bar
+            startProgressBar();
             
             // Show loading indicator
             const loading = document.getElementById('loading');
@@ -1488,6 +1726,9 @@
                     aiModelState.currentAiModelUrl = data.ai_model_url;
                     aiModelState.sessionId = data.session_id;
                     
+                    // Complete progress bar
+                    completeProgressBar();
+                    
                     // Show preview
                     document.getElementById('aiModelPreviewImage').src = data.ai_model_url + '?t=' + new Date().getTime();
                     document.getElementById('aiModelPreview').style.display = 'block';
@@ -1495,11 +1736,21 @@
                     // Scroll to preview
                     document.getElementById('aiModelPreview').scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else {
-                    alert('Failed to generate AI model: ' + (data.error || 'Unknown error'));
+                    hideProgressBar();
+                    
+                    // Show error in message box instead of alert
+                    const message = document.getElementById('message');
+                    message.innerHTML = '<div class="message error">' + (data.error || 'Unknown error') + '</div>';
+                    message.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             } catch (error) {
+                hideProgressBar();
                 console.error('Error generating AI model:', error);
-                alert('Error: ' + error.message);
+                
+                // Show error in message box
+                const message = document.getElementById('message');
+                message.innerHTML = '<div class="message error">Error: ' + error.message + '</div>';
+                message.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } finally {
                 button.disabled = false;
                 button.textContent = 'Generate AI Model';
@@ -1516,18 +1767,18 @@
             const previewSection = document.getElementById('aiModelPreview');
             const acceptBtn = this;
             
-            // Disable buttons and show acceptance
+            // Update accept button to show acceptance
             acceptBtn.style.background = '#218838';
             acceptBtn.textContent = '✓ Model Accepted';
             acceptBtn.disabled = true;
             
-            // Optionally disable other buttons
-            document.getElementById('regenerateAiModelBtn').disabled = true;
-            document.getElementById('cancelAiModelBtn').disabled = true;
+            // Keep regenerate and cancel buttons enabled so user can still change their mind
+            // document.getElementById('regenerateAiModelBtn').disabled = true;
+            // document.getElementById('cancelAiModelBtn').disabled = true;
             
             // Show success message
             const message = document.getElementById('message');
-            message.innerHTML = '<div class="message success">AI model accepted! You can now generate the garment swap with this model.</div>';
+            message.innerHTML = '<div class="message success">AI model accepted! You can now generate the garment swap with this model, or click "Generate Different Model" to try again.</div>';
             
             // Scroll to generate button
             setTimeout(() => {
@@ -1645,6 +1896,7 @@
             loading.classList.add('show');
             message.innerHTML = '';
             resultSection.classList.remove('show');
+            document.getElementById('saveImageBtn').style.display = 'none';
             
             try {
                 const response = await fetch('/generate', {
@@ -1695,6 +1947,9 @@
                     message.innerHTML = '<div class="message success">' + data.message + '</div>';
                     document.getElementById('resultImage').src = data.image_url + '?t=' + new Date().getTime();
                     resultSection.classList.add('show');
+                    
+                    // Show save button
+                    document.getElementById('saveImageBtn').style.display = 'inline-block';
                     
                     // Store combined refinements for next iteration
                     // Use the combined refinements that were actually sent (stored in closure)

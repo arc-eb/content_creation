@@ -430,6 +430,15 @@ class GeminiGarmentSwapClient:
                 if hasattr(candidate, 'finish_reason'):
                     finish_reason = candidate.finish_reason
                     logger.error(f"Finish reason: {finish_reason}")
+                    
+                    # Raise specific error for IMAGE_OTHER
+                    finish_str = str(finish_reason)
+                    if 'IMAGE_OTHER' in finish_str:
+                        raise Exception(
+                            "API_IMAGE_OTHER: The Gemini API couldn't generate this modification. "
+                            "This can happen randomly. Try clicking 'Generate Different Model' again, "
+                            "or try with simpler custom instructions."
+                        )
                 return None
             
             if not hasattr(content, 'parts'):

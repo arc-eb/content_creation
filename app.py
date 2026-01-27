@@ -37,7 +37,10 @@ if env_path.exists():
 from config import Config
 from gemini_client import GeminiGarmentSwapClient
 from prompt_generator import PromptGenerator
+from models import db, Generation, GeneratedImage
 import logging
+import time
+import base64
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -48,6 +51,25 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'output_web'
 # Get secret key from environment or use default (change in production!)
 app.secret_key = os.getenv("SECRET_KEY", "bompard-secret-key-change-in-production")
+
+# Database configuration
+database_url = os.getenv('DATABASE_URL', 'sqlite:///bompard_content.db')
+# Handle Render.com's postgres:// URLs (need to convert to postgresql://)
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize database
+db.init_app(app)
+
+# Create tables
+with app.app_context():
+    try:
+        db.create_all()
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Error creating database tables: {e}")
 
 # Ensure directories exist
 Path(app.config['UPLOAD_FOLDER']).mkdir(exist_ok=True)
@@ -226,6 +248,9 @@ def generate():
             if max_output_size:
                 logger.info(f"Using default: output will match model image size (max {max_output_size}px)")
         
+        # Track start time for processing duration
+        start_time = time.time()
+        
         try:
             result_path = client.swap_garment(
                 model_image_path=model_path,
@@ -272,6 +297,28 @@ def generate():
                     "Try: shorter refinements, smaller images, or wait and retry"
                 )
             
+            # Save error to database
+            try:
+                processing_time = time.time() - start_time
+                generation = Generation(
+                    session_id=session_id,
+                    generation_type='garment_swap',
+                    model_image_path=str(model_path) if model_path else None,
+                    flatlay_image_path=str(flatlay_path) if flatlay_path else None,
+                    output_image_path=str(output_path),
+                    refinements=refinements if refinements else None,
+                    output_size=output_size,
+                    prompt_used=full_prompt,
+                    success=False,
+                    error_message=error_msg,
+                    processing_time_seconds=processing_time
+                )
+                db.session.add(generation)
+                db.session.commit()
+                logger.info(f"Saved failed garment swap to database (ID: {generation.id})")
+            except Exception as db_error:
+                logger.error(f"Failed to save error to database: {db_error}")
+            
             # Include prompt in error response so user can see what was used
             return jsonify({
                 'error': error_msg,
@@ -281,10 +328,32 @@ def generate():
             }), 500
         
         if result_path and result_path.exists():
+            processing_time = time.time() - start_time
             refinements_applied = bool(refinements and clean_refinements.strip())
             message = 'Image generated successfully!'
             if refinements_applied:
                 message += ' (Refinements were applied ✓)'
+            
+            # Save to database
+            try:
+                generation = Generation(
+                    session_id=session_id,
+                    generation_type='garment_swap',
+                    model_image_path=str(model_path),
+                    flatlay_image_path=str(flatlay_path),
+                    output_image_path=str(output_path),
+                    refinements=refinements if refinements else None,
+                    output_size=output_size,
+                    prompt_used=full_prompt,
+                    success=True,
+                    processing_time_seconds=processing_time
+                )
+                db.session.add(generation)
+                db.session.commit()
+                logger.info(f"✅ Saved garment swap generation to database (ID: {generation.id})")
+            except Exception as e:
+                logger.error(f"Failed to save generation to database: {e}")
+                # Don't fail the request if DB write fails
             
             return jsonify({
                 'success': True,
@@ -376,6 +445,9 @@ def generate_ai_model():
         print(f"Generating AI model from: {ref_path}")
         print(f"Output: {ai_model_path}")
         
+        # Track start time
+        start_time = time.time()
+        
         try:
             result_path = client.generate_ai_model(
                 reference_image_path=ref_path,
@@ -387,7 +459,18 @@ def generate_ai_model():
             error_msg = str(e)
             
             # Provide user-friendly error messages
-            if 'PROHIBITED_CONTENT' in error_msg:
+            if 'API_IMAGE_OTHER' in error_msg or 'IMAGE_OTHER' in error_msg:
+                error_msg = (
+                    "⚠️ API Generation Issue\n\n"
+                    "The Gemini API couldn't complete this modification (IMAGE_OTHER error). "
+                    "This can happen randomly with face/pose modifications.\n\n"
+                    "Solutions:\n"
+                    "• Click 'Generate Different Model' to try again\n"
+                    "• Simplify your custom instructions\n"
+                    "• Try a different reference image\n"
+                    "• Sometimes it works on the 2nd or 3rd try"
+                )
+            elif 'PROHIBITED_CONTENT' in error_msg:
                 error_msg = (
                     "Content Policy Error: The API blocked this generation.\n\n"
                     "The reference image may contain content that violates safety policies. "
@@ -399,9 +482,50 @@ def generate_ai_model():
                     "Try using a different reference image."
                 )
             
+            # Save error to database
+            try:
+                processing_time = time.time() - start_time
+                generation = Generation(
+                    session_id=session_id,
+                    generation_type='ai_model',
+                    model_image_path=str(ref_path),
+                    output_image_path=str(ai_model_path),
+                    custom_instructions=custom_instructions if custom_instructions else None,
+                    prompt_used=ai_model_prompt,
+                    success=False,
+                    error_message=error_msg,
+                    processing_time_seconds=processing_time
+                )
+                db.session.add(generation)
+                db.session.commit()
+                logger.info(f"Saved failed AI model generation to database (ID: {generation.id})")
+            except Exception as db_error:
+                logger.error(f"Failed to save error to database: {db_error}")
+            
             return jsonify({'error': error_msg}), 500
         
         if result_path and result_path.exists():
+            processing_time = time.time() - start_time
+            
+            # Save to database
+            try:
+                generation = Generation(
+                    session_id=session_id,
+                    generation_type='ai_model',
+                    model_image_path=str(ref_path),
+                    output_image_path=str(ai_model_path),
+                    custom_instructions=custom_instructions if custom_instructions else None,
+                    prompt_used=ai_model_prompt,
+                    success=True,
+                    processing_time_seconds=processing_time
+                )
+                db.session.add(generation)
+                db.session.commit()
+                logger.info(f"✅ Saved AI model generation to database (ID: {generation.id})")
+            except Exception as e:
+                logger.error(f"Failed to save AI model to database: {e}")
+                # Don't fail the request if DB write fails
+            
             return jsonify({
                 'success': True,
                 'ai_model_url': url_for('get_image', filename=ai_model_filename),
@@ -429,6 +553,149 @@ def get_image(filename):
         return response
     else:
         return jsonify({'error': 'Image not found'}), 404
+
+
+@app.route('/save-image', methods=['POST'])
+def save_image():
+    """Save result image binary data to database."""
+    try:
+        data = request.get_json()
+        image_url = data.get('image_url')
+        
+        if not image_url:
+            return jsonify({'error': 'image_url is required'}), 400
+        
+        # Extract filename from URL (e.g., /image/abc123_result.png -> abc123_result.png)
+        filename = image_url.split('/')[-1]
+        
+        # Read image file from output folder
+        image_path = Path(app.config['OUTPUT_FOLDER']) / filename
+        
+        if not image_path.exists():
+            return jsonify({'error': f'Image file not found: {filename}'}), 404
+        
+        # Read image binary data
+        with open(image_path, 'rb') as f:
+            image_data = f.read()
+        
+        # Save to database
+        saved_image = GeneratedImage(image_data=image_data)
+        db.session.add(saved_image)
+        db.session.commit()
+        
+        logger.info(f"✅ Saved image to database (ID: {saved_image.id}, size: {len(image_data)} bytes)")
+        
+        return jsonify({
+            'success': True,
+            'image_id': saved_image.id,
+            'message': 'Image saved to database successfully!'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error saving image to database: {e}", exc_info=True)
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/gallery')
+def gallery():
+    """Render gallery page to view saved images."""
+    return render_template('gallery.html')
+
+
+@app.route('/api/saved-images')
+def get_saved_images():
+    """Get list of all saved images with thumbnails."""
+    try:
+        limit = request.args.get('limit', 50, type=int)
+        limit = min(limit, 100)  # Max 100
+        
+        saved_images = GeneratedImage.query.order_by(
+            GeneratedImage.created_at.desc()
+        ).limit(limit).all()
+        
+        # Convert to list with base64 thumbnails for display
+        images_list = []
+        for img in saved_images:
+            img_dict = img.to_dict(include_data=True)
+            images_list.append(img_dict)
+        
+        return jsonify({
+            'count': len(images_list),
+            'images': images_list
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching saved images: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/saved-image/<int:image_id>')
+def get_saved_image(image_id):
+    """Get full resolution image by ID."""
+    try:
+        saved_image = GeneratedImage.query.get(image_id)
+        
+        if not saved_image:
+            return jsonify({'error': 'Image not found'}), 404
+        
+        # Return image as binary data
+        from io import BytesIO
+        return send_file(
+            BytesIO(saved_image.image_data),
+            mimetype='image/png',
+            as_attachment=False,
+            download_name=f'saved_image_{image_id}.png'
+        )
+        
+    except Exception as e:
+        logger.error(f"Error retrieving saved image: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/history/<session_id>')
+def get_history(session_id):
+    """Get generation history for a specific session."""
+    try:
+        generations = Generation.query.filter_by(
+            session_id=session_id
+        ).order_by(Generation.created_at.desc()).limit(20).all()
+        
+        return jsonify({
+            'session_id': session_id,
+            'count': len(generations),
+            'generations': [g.to_dict() for g in generations]
+        })
+    except Exception as e:
+        logger.error(f"Error fetching history: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/history')
+def get_all_history():
+    """Get recent generation history (last 50)."""
+    try:
+        limit = request.args.get('limit', 50, type=int)
+        limit = min(limit, 100)  # Max 100
+        
+        generations = Generation.query.order_by(
+            Generation.created_at.desc()
+        ).limit(limit).all()
+        
+        # Calculate statistics
+        total_count = Generation.query.count()
+        success_count = Generation.query.filter_by(success=True).count()
+        
+        return jsonify({
+            'total_generations': total_count,
+            'successful_generations': success_count,
+            'success_rate': round(success_count / total_count * 100, 1) if total_count > 0 else 0,
+            'recent_count': len(generations),
+            'generations': [g.to_dict() for g in generations]
+        })
+    except Exception as e:
+        logger.error(f"Error fetching history: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':
