@@ -1,7 +1,9 @@
-google-genai>=1.0.0
-Pillow>=10.0.0
-Flask>=3.0.0
-Werkzeug>=3.0.0
-gunicorn>=21.2.0
-python-dotenv>=1.0.0
+# Pinned versions to ensure consistency between local Docker and Render deployment
+# Last updated: 2026-01-27
+google-genai==1.60.0
+Pillow==12.1.0
+Flask==3.1.2
+Werkzeug==3.1.5
+gunicorn==24.1.1
+python-dotenv==1.2.1
 
