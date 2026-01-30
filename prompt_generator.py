@@ -14,6 +14,7 @@ class PromptGenerator:
         preserve_face: bool = True,
         preserve_lighting: bool = True,
         preserve_background: bool = True,
+        has_material_detail: bool = False,
     ) -> str:
         """
         Generate a sophisticated prompt for photorealistic garment swapping.
@@ -23,6 +24,7 @@ class PromptGenerator:
             preserve_face: Whether to preserve the model's exact face
             preserve_lighting: Whether to preserve original studio lighting
             preserve_background: Whether to preserve original background
+            has_material_detail: Whether a material detail/texture reference image is provided
             
         Returns:
             Formatted prompt string optimized for Gemini 2.5 Flash Image
@@ -70,6 +72,18 @@ CRITICAL: The garment from the flat-lay must NOT be modified in any way when tra
         prompt_lines.append("")
         prompt_lines.append("REPLACE (change this only):")
         prompt_lines.append(garment_instruction)
+        
+        # Add material detail instructions if provided
+        if has_material_detail:
+            prompt_lines.append("")
+            prompt_lines.append("MATERIAL REFERENCE:")
+            prompt_lines.append("A close-up material detail image is provided showing the garment's texture.")
+            prompt_lines.append("Use this texture reference to ensure the garment on the model has:")
+            prompt_lines.append("- The EXACT same material texture, weave pattern, and fiber appearance")
+            prompt_lines.append("- The same surface quality (matte, shiny, soft, etc.)")
+            prompt_lines.append("- The same color depth and tonal variations visible in the texture")
+            prompt_lines.append("- The texture must be perfectly consistent with the material detail image")
+        
         prompt_lines.append("")
         prompt_lines.append("Output: Professional fashion photography quality, sharp focus.")
         

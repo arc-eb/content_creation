@@ -39,6 +39,7 @@ class GeminiGarmentSwapClient:
         output_path: Path,
         max_output_size: Optional[int] = None,
         additional_image_path: Optional[Path] = None,
+        material_detail_path: Optional[Path] = None,
     ) -> Optional[Path]:
         """
         Perform a garment swap using Gemini API.
@@ -50,6 +51,7 @@ class GeminiGarmentSwapClient:
             output_path: Path where the output image should be saved
             max_output_size: Optional maximum dimension for output image (resizes if larger)
             additional_image_path: Optional path to an additional image for guidance
+            material_detail_path: Optional path to a material detail/texture reference image
             
         Returns:
             Path to the saved output image if successful, None otherwise
@@ -67,7 +69,13 @@ class GeminiGarmentSwapClient:
             logger.error(f"Additional image not found: {additional_image_path}")
             raise FileNotFoundError(f"Additional image not found: {additional_image_path}")
         
+        if material_detail_path and not material_detail_path.exists():
+            logger.error(f"Material detail image not found: {material_detail_path}")
+            raise FileNotFoundError(f"Material detail image not found: {material_detail_path}")
+        
         log_msg = f"Processing garment swap: {model_image_path.name} + {flatlay_image_path.name}"
+        if material_detail_path:
+            log_msg += f" + material_detail: {material_detail_path.name}"
         if additional_image_path:
             log_msg += f" + additional: {additional_image_path.name}"
         logger.info(log_msg)
@@ -77,7 +85,7 @@ class GeminiGarmentSwapClient:
         for attempt in range(1, self.config.max_retries + 1):
             try:
                 result = self._perform_swap(
-                    model_image_path, flatlay_image_path, prompt, output_path, max_output_size, additional_image_path
+                    model_image_path, flatlay_image_path, prompt, output_path, max_output_size, additional_image_path, material_detail_path
                 )
                 if result:
                     logger.info(f"✅ Successfully saved image to: {output_path}")
@@ -109,6 +117,7 @@ class GeminiGarmentSwapClient:
         output_path: Path,
         max_output_size: Optional[int] = None,
         additional_image_path: Optional[Path] = None,
+        material_detail_path: Optional[Path] = None,
     ) -> Optional[Path]:
         """Internal method to perform the actual API call."""
         # Load images
@@ -116,11 +125,18 @@ class GeminiGarmentSwapClient:
             model_image = Image.open(model_image_path)
             flatlay_image = Image.open(flatlay_image_path)
             additional_image = None
+            material_detail_image = None
             if additional_image_path:
                 additional_image = Image.open(additional_image_path)
                 logger.info(
                     f"Additional image: {additional_image.size}, mode: {additional_image.mode}, "
                     f"format: {additional_image.format}"
+                )
+            if material_detail_path:
+                material_detail_image = Image.open(material_detail_path)
+                logger.info(
+                    f"Material detail image: {material_detail_image.size}, mode: {material_detail_image.mode}, "
+                    f"format: {material_detail_image.format}"
                 )
         except Exception as e:
             logger.error(f"Error loading images: {e}")
@@ -137,18 +153,26 @@ class GeminiGarmentSwapClient:
         )
         
         # Check image sizes and potentially resize if too large
-        # Use smaller max dimension when additional image is present (3 images total)
-        max_dimension = 1536 if additional_image else 2048
+        # Use smaller max dimension when multiple extra images are present
+        num_extra_images = (1 if additional_image else 0) + (1 if material_detail_image else 0)
+        if num_extra_images >= 2:
+            max_dimension = 1280  # 4 images total - use smaller size
+        elif num_extra_images == 1:
+            max_dimension = 1536  # 3 images total
+        else:
+            max_dimension = 2048  # 2 images total
         
         model_max = max(model_image.size)
         flatlay_max = max(flatlay_image.size)
         additional_max = max(additional_image.size) if additional_image else 0
+        material_detail_max = max(material_detail_image.size) if material_detail_image else 0
         
         # Always resize if any image exceeds max_dimension
-        if model_max > max_dimension or flatlay_max > max_dimension or additional_max > max_dimension:
+        if model_max > max_dimension or flatlay_max > max_dimension or additional_max > max_dimension or material_detail_max > max_dimension:
             logger.warning(
                 f"One or more images are large (model: {model_max}px, flatlay: {flatlay_max}px, "
-                f"additional: {additional_max}px). Resizing to {max_dimension}px to avoid API issues."
+                f"material_detail: {material_detail_max}px, additional: {additional_max}px). "
+                f"Resizing to {max_dimension}px to avoid API issues."
             )
             
             # Resize images if too large (maintain aspect ratio)
@@ -164,6 +188,12 @@ class GeminiGarmentSwapClient:
                 flatlay_image = flatlay_image.resize(new_size, Image.Resampling.LANCZOS)
                 logger.info(f"Resized flat-lay image to: {flatlay_image.size}")
             
+            if material_detail_image and material_detail_max > max_dimension:
+                ratio = max_dimension / material_detail_max
+                new_size = (int(material_detail_image.size[0] * ratio), int(material_detail_image.size[1] * ratio))
+                material_detail_image = material_detail_image.resize(new_size, Image.Resampling.LANCZOS)
+                logger.info(f"Resized material detail image to: {material_detail_image.size}")
+            
             if additional_image and additional_max > max_dimension:
                 ratio = max_dimension / additional_max
                 new_size = (int(additional_image.size[0] * ratio), int(additional_image.size[1] * ratio))
@@ -177,21 +207,29 @@ class GeminiGarmentSwapClient:
         if flatlay_image.mode != 'RGB':
             logger.info(f"Converting flat-lay image from {flatlay_image.mode} to RGB")
             flatlay_image = flatlay_image.convert('RGB')
+        if material_detail_image and material_detail_image.mode != 'RGB':
+            logger.info(f"Converting material detail image from {material_detail_image.mode} to RGB")
+            material_detail_image = material_detail_image.convert('RGB')
         if additional_image and additional_image.mode != 'RGB':
             logger.info(f"Converting additional image from {additional_image.mode} to RGB")
             additional_image = additional_image.convert('RGB')
         
         # Prepare content for API
+        # Order: prompt, model, flatlay, material_detail (if any), additional (if any)
         contents = [
             prompt,
             model_image,
             flatlay_image,
         ]
+        if material_detail_image:
+            contents.append(material_detail_image)
+            logger.info("Material detail image included in API call")
         if additional_image:
             contents.append(additional_image)
-            logger.info("Additional image included in API call (3 images total)")
-        else:
-            logger.info("No additional image (2 images total)")
+            logger.info("Additional image included in API call")
+        
+        total_images = len(contents) - 1  # Subtract 1 for prompt
+        logger.info(f"Total images in API call: {total_images}")
         
         # Log request details for debugging
         logger.info(f"Request details: {len(contents)} items (1 prompt + {len(contents)-1} images)")

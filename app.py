@@ -120,6 +120,7 @@ def generate():
         model_file = request.files['model_file']
         flatlay_file = request.files['flatlay_file']
         additional_file = request.files.get('additional_image')  # Optional additional image
+        material_detail_file = request.files.get('material_detail_file')  # Optional material detail image
         refinements = request.form.get('refinements', '').strip()
         output_size = request.form.get('output_size', 'original')  # Get output size preference
         
@@ -159,6 +160,17 @@ def generate():
             additional_file.save(additional_path)
             logger.info(f"Additional image saved: {additional_path}")
         
+        # Handle optional material detail image
+        material_detail_path = None
+        if material_detail_file and material_detail_file.filename != '':
+            if not allowed_file(material_detail_file.filename):
+                return jsonify({'error': 'Invalid material detail image file type. Allowed: PNG, JPG, JPEG, WEBP'}), 400
+            material_detail_filename = secure_filename(material_detail_file.filename)
+            material_detail_ext = material_detail_filename.rsplit('.', 1)[1].lower()
+            material_detail_path = Path(app.config['UPLOAD_FOLDER']) / f"{session_id}_material.{material_detail_ext}"
+            material_detail_file.save(material_detail_path)
+            logger.info(f"Material detail image saved: {material_detail_path}")
+        
         # Get model image dimensions to use as default output size
         try:
             from PIL import Image as PILImage
@@ -171,7 +183,8 @@ def generate():
         
         # Prepare prompt
         prompt_gen = PromptGenerator()
-        base_prompt = prompt_gen.generate_garment_swap_prompt()
+        has_material_detail = material_detail_path is not None
+        base_prompt = prompt_gen.generate_garment_swap_prompt(has_material_detail=has_material_detail)
         
         # Build full prompt with refinements
         if refinements:
@@ -264,6 +277,7 @@ def generate():
                 output_path=output_path,
                 max_output_size=max_output_size,
                 additional_image_path=additional_path,  # Optional additional image
+                material_detail_path=material_detail_path,  # Optional material detail image
             )
         except Exception as e:
             logger.error(f"Error in garment swap: {e}", exc_info=True)

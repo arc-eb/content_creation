@@ -245,8 +245,8 @@
         
         .upload-section {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
             margin-bottom: 50px;
         }
         
@@ -1016,6 +1016,12 @@
             }
         }
         
+        @media (max-width: 1200px) {
+            .upload-section {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
         @media (max-width: 968px) {
             .upload-section {
                 grid-template-columns: 1fr;
@@ -1145,6 +1151,20 @@
                         </div>
                         <div class="file-name" id="flatlayFileName"></div>
                         <img id="flatlayPreview" class="file-preview" style="display: none;">
+                    </div>
+                    
+                    <div class="upload-box" id="materialDetailBox">
+                        <label for="material_detail_file">Material Detail (Optional)</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="material_detail_file" name="material_detail_file" class="file-input" accept="image/*">
+                            <button type="button" class="file-button" onclick="document.getElementById('material_detail_file').click()">Choose File</button>
+                        </div>
+                        <div class="file-name" id="materialDetailFileName"></div>
+                        <div id="materialDetailPreviewContainer" style="display: none; position: relative;">
+                            <img id="materialDetailPreview" class="file-preview" style="display: block;">
+                            <button type="button" id="removeMaterialDetail" class="close-preview-button" onclick="removeMaterialDetail(event)" title="Remove material detail image">×</button>
+                        </div>
+                        <div class="hint" style="margin-top: 12px; font-size: 0.8rem; color: var(--bompard-gray);">Upload a close-up/zoom of the garment's texture to ensure material fidelity</div>
                     </div>
                 </div>
                 
@@ -1308,6 +1328,52 @@
             setupDragAndDrop('flatlayBox', 'flatlay_file');
         });
         
+        // Material detail file handler
+        document.getElementById('material_detail_file').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                handleFileSelect(e.target.files[0], 'materialDetailFileName', 'materialDetailPreview');
+                document.getElementById('materialDetailPreviewContainer').style.display = 'block';
+            } else {
+                removeMaterialDetail();
+            }
+        });
+        
+        // Function to remove material detail image
+        function removeMaterialDetail(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            // Clear file input
+            const fileInput = document.getElementById('material_detail_file');
+            if (fileInput) {
+                fileInput.value = '';
+            }
+            
+            // Clear filename display
+            const fileNameElement = document.getElementById('materialDetailFileName');
+            if (fileNameElement) {
+                fileNameElement.textContent = '';
+            }
+            
+            // Clear and hide preview image
+            const previewElement = document.getElementById('materialDetailPreview');
+            if (previewElement) {
+                previewElement.src = '';
+                previewElement.style.display = 'none';
+            }
+            
+            // Hide container
+            const containerElement = document.getElementById('materialDetailPreviewContainer');
+            if (containerElement) {
+                containerElement.style.display = 'none';
+            }
+        }
+        
+        // Make function globally accessible
+        window.removeMaterialDetail = removeMaterialDetail;
+        
         // Function to remove additional image
         function removeAdditionalImage(e) {
             if (e) {
@@ -1353,12 +1419,18 @@
             }
         });
         
-        // Use event delegation for the remove button (works even if button is dynamically shown/hidden)
+        // Use event delegation for the remove buttons (works even if button is dynamically shown/hidden)
         document.addEventListener('click', function(e) {
             if (e.target && e.target.id === 'removeAdditionalImage') {
                 e.preventDefault();
                 e.stopPropagation();
                 removeAdditionalImage(e);
+                return false;
+            }
+            if (e.target && e.target.id === 'removeMaterialDetail') {
+                e.preventDefault();
+                e.stopPropagation();
+                removeMaterialDetail(e);
                 return false;
             }
         });
@@ -1403,14 +1475,27 @@
                 const files = dt.files;
                 if (files.length > 0) {
                     input.files = files;
-                    handleFileSelect(files[0], inputId === 'model_file' ? 'modelFileName' : 'flatlayFileName', 
-                                   inputId === 'model_file' ? 'modelPreview' : 'flatlayPreview');
+                    // Map input IDs to their corresponding file name and preview element IDs
+                    const idMappings = {
+                        'model_file': { fileName: 'modelFileName', preview: 'modelPreview' },
+                        'flatlay_file': { fileName: 'flatlayFileName', preview: 'flatlayPreview' },
+                        'material_detail_file': { fileName: 'materialDetailFileName', preview: 'materialDetailPreview' }
+                    };
+                    const mapping = idMappings[inputId];
+                    if (mapping) {
+                        handleFileSelect(files[0], mapping.fileName, mapping.preview);
+                        // Show container for material detail
+                        if (inputId === 'material_detail_file') {
+                            document.getElementById('materialDetailPreviewContainer').style.display = 'block';
+                        }
+                    }
                 }
             }, false);
         }
         
         setupDragAndDrop('modelBox', 'model_file');
         setupDragAndDrop('flatlayBox', 'flatlay_file');
+        setupDragAndDrop('materialDetailBox', 'material_detail_file');
         
         // Toggle prompt display
         let promptVisible = false;
@@ -1445,6 +1530,9 @@
             
             // Clear additional image
             removeAdditionalImage();
+            
+            // Clear material detail image
+            removeMaterialDetail();
             
             // Clear refinements textarea and accumulated refinements
             document.getElementById('refinements').value = '';
